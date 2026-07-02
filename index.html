@@ -5,61 +5,78 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>幸せ雑貨店 · 團購登記</title>
 <style>
-  :root{ --navy:#1e3a8a; --navy2:#2c52c0; --ink:#1f2433; --muted:#5b6478; --line:#e5e7eb; --bg:#eef2f9; }
+  :root{ --navy:#1e3a8a; --navy-bright:#2c52c0; --navy-deep:#15306f; --ink:#1f2433; --muted:#6b7280; --line:#e5e7eb; --card:#fff; }
   *{box-sizing:border-box}
-  body{margin:0;font-family:-apple-system,"PingFang TC","Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:16px;line-height:1.5;-webkit-text-size-adjust:100%}
-  .wrap{max-width:640px;margin:0 auto;padding:16px 14px 60px}
-  .brand{background:var(--navy);color:#fff;border-radius:16px;padding:16px 18px;margin-bottom:14px}
-  .brand .jp{font-size:20px;font-weight:800;letter-spacing:.5px}
-  .brand .romaji{font-size:12px;opacity:.85;margin-top:2px}
-  .brand .sub{font-size:12.5px;opacity:.9;margin-top:6px;line-height:1.5}
-  .card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:0 1px 3px rgba(30,58,138,.05)}
-  h2{font-size:17px;margin:0 0 10px;font-weight:800;color:var(--ink)}
-  .small{font-size:13px;color:var(--muted);line-height:1.55}
-  label{display:block;font-size:13px;color:var(--muted);margin:0 0 4px;font-weight:600}
-  input,textarea,select{width:100%;padding:11px 12px;border:1.5px solid var(--line);border-radius:11px;font-size:16px;background:#fff;font-family:inherit}
-  input:focus,textarea:focus{outline:none;border-color:var(--navy2)}
+  body{margin:0;color:var(--ink);font-family:-apple-system,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;font-size:16px;line-height:1.55;min-height:100vh;background:linear-gradient(180deg,#264ca8 0%,#1b3c8f 40%,#16316f 100%);background-attachment:fixed;-webkit-text-size-adjust:100%}
+  .wrap{max-width:780px;margin:0 auto;padding:22px 14px 70px}
+
+  .brand{background:linear-gradient(180deg,#21409a,#19388a);border:1px solid rgba(255,255,255,.20);border-radius:18px;padding:20px 18px;text-align:center;box-shadow:0 10px 26px rgba(8,18,52,.40);margin-bottom:16px}
+  .brand .jp{color:#fff;font-size:26px;font-weight:800;letter-spacing:2px}
+  .brand .romaji{color:rgba(255,255,255,.80);font-size:13px;letter-spacing:2px;margin-top:6px}
+  .brand .sub{color:rgba(255,255,255,.85);font-size:14px;margin-top:12px;line-height:1.6}
+
+  .card{background:var(--card);border:1px solid rgba(255,255,255,.5);border-radius:18px;padding:18px;margin-bottom:16px;box-shadow:0 10px 26px rgba(10,20,55,.20)}
+  h2{font-size:18px;font-weight:800;color:var(--ink);margin:0 0 12px}
+  .small{font-size:13.5px;color:var(--muted);line-height:1.6}
+  label{font-size:15px;color:var(--muted);display:block;margin-bottom:5px}
+  input,select,textarea{width:100%;border:1.5px solid #d6d9e2;border-radius:10px;padding:11px 13px;font-size:16px;font-family:inherit;background:#fff;color:var(--ink)}
+  input:focus,select:focus,textarea:focus{border-color:var(--navy-bright);outline:none}
+  textarea{resize:vertical}
   .field{margin-bottom:12px}
-  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  .inline{display:flex;align-items:center;gap:6px}
-  button{cursor:pointer;border:none;font-family:inherit}
-  .btn{width:100%;padding:14px;border-radius:12px;font-size:16px;font-weight:700}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .inline{display:flex;align-items:center;gap:7px}
+
+  button{font-family:inherit;cursor:pointer;border:none}
+  .btn{width:100%;border-radius:12px;padding:15px;font-size:17px;font-weight:700}
   .btn-primary{background:var(--navy);color:#fff}
-  .btn-primary:active{background:#162c69}
-  .btn-ghost{background:#eef2fd;color:var(--navy);border:1px solid #d7e0fb}
-  .btn-line{background:#fff;color:var(--navy);border:1.5px solid var(--navy)}
-  .btn-danger{background:#fff;color:#dc2626;border:1.5px solid #f0b4b4}
-  .btn-sm{padding:6px 10px;font-size:13px;border-radius:9px;width:auto}
-  .two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-  .hidden{display:none}
-  .pill{display:inline-block;border-radius:99px;padding:4px 12px;font-size:13px;font-weight:700}
-  .pill-open{background:#dcfce7;color:#166534}
-  .pill-soon{background:#fee2e2;color:#b91c1c}
-  .pill-closed{background:#f1f5f9;color:#64748b}
-  table{width:100%;border-collapse:collapse;font-size:14.5px}
-  th,td{border-bottom:1px solid #eef0f5;padding:8px 6px;text-align:left}
+  .btn-primary:hover{background:#16306f}
+  .btn-primary:disabled{background:#c2c8d6}
+  .btn-ghost{background:#fff;border:1.5px solid var(--navy);color:var(--navy);font-weight:700}
+  .btn-line{background:#fff;border:1.5px solid #d6d9e2;color:#475069;font-weight:600}
+  .btn-danger{background:#fff;border:1.5px solid #f3b4b4;color:#d92d2d;font-weight:600}
+  .btn-ghost:not(.btn),.btn-line:not(.btn),.btn-danger:not(.btn){border-radius:11px;padding:12px 14px;font-size:15px}
+  .btn-sm{padding:6px 11px !important;font-size:13px !important;border-radius:9px !important;width:auto !important;font-weight:600}
+  .two{display:flex;gap:9px}.two>button{flex:1}
+
+  table{width:100%;border-collapse:collapse;font-size:16px}
+  th{text-align:left;font-size:13px;color:#8a90a3;font-weight:600;padding:9px 5px}
+  td{padding:8px 5px;border-top:1px solid #eef0f5}
   th.num,td.num{text-align:right}
-  tfoot td{font-weight:700;border-top:2px solid var(--line);border-bottom:none}
+  td input{border:1.5px solid transparent;padding:8px;font-size:16px}
+  td input:hover{border-color:var(--line)}
+  td input:focus{border-color:var(--navy-bright);outline:none}
+  tfoot td{border-top:2px solid #dfe3ec;font-weight:700;color:var(--ink);padding:10px 5px;font-size:17px}
+
+  .pill{font-size:13px;padding:4px 11px;border-radius:99px;font-weight:700}
+  .pill-open{background:#dbe4fb;color:#1e3a8a}
+  .pill-soon{background:#fee2e2;color:#b91c1c}
+  .pill-closed{background:#eceef3;color:#6b7280}
+
+  .toolbtns{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+
   .prod{display:flex;gap:14px;align-items:flex-start}
   .prod img{width:96px;height:96px;object-fit:cover;border-radius:12px;border:1px solid var(--line);flex:0 0 auto}
   .prodname{font-size:19px;font-weight:800;line-height:1.35}
   .price{font-size:22px;font-weight:800;color:var(--navy);margin-top:4px}
   .count{font-size:26px;font-weight:800;color:var(--navy)}
+
   .banner{border-radius:12px;padding:12px 14px;font-size:14px;margin-bottom:12px;line-height:1.6}
-  .b-ok{background:#dcfce7;color:#166534;border:1px solid #bbf7d0}
-  .b-warn{background:#fef3c7;color:#92400e;border:1px solid #fde68a}
+  .b-ok{background:#dbe4fb;color:#1c357f;border:1px solid #b9c9f7}
+  .b-warn{background:#fff4e6;color:#9a4d12;border:1px solid #fdd9a8}
   .b-red{background:#fef2f2;color:#b91c1c;border:1px solid #fecaca}
-  .msg{font-size:13px;margin-top:8px;min-height:1em}
-  .msg-ok{color:#16a34a}.msg-warn{color:#c0392b}
-  .thumb{position:relative;width:74px;height:74px}
-  .thumb img{width:74px;height:74px;object-fit:cover;border-radius:10px;border:1px solid var(--line)}
-  .thumb button{position:absolute;top:-7px;right:-7px;width:22px;height:22px;border-radius:50%;background:#1f2433;color:#fff;font-size:13px;line-height:22px;padding:0}
-  .done{text-align:center;padding:20px 6px}
-  .done .big{font-size:52px}
-  code{background:#f1f5f9;padding:1px 6px;border-radius:6px;font-size:13px;word-break:break-all}
-  .toolbtns{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
-  a{color:var(--navy2)}
-  @media print{ body>*{display:none!important} #printArea{display:block!important} #printArea table{width:100%;border-collapse:collapse} #printArea th,#printArea td{border:1px solid #444;padding:7px 9px;font-size:14px} }
+  .msg{font-size:14px;border-radius:10px;padding:10px 13px;margin-top:9px;min-height:1em}
+  .msg-ok{background:#e6edfd;color:#1c357f}
+  .msg-warn{background:#fff4e6;color:#9a4d12}
+
+  .thumb{position:relative}
+  .thumb img{width:80px;height:80px;object-fit:cover;border-radius:10px;border:1px solid var(--line)}
+
+  .done{text-align:center;padding:20px 6px}.done .big{font-size:52px}
+  code{background:#eef2fd;padding:1px 6px;border-radius:6px;font-size:13px;word-break:break-all;color:#1c357f}
+  a{color:var(--navy-bright)}
+  .hidden{display:none}
+  .printonly{display:none}
+  @media print{ body{background:#fff!important} body>*{display:none!important} #printArea{display:block!important} #printArea table{width:100%;border-collapse:collapse} #printArea th,#printArea td{border:1px solid #444;padding:7px 9px;font-size:14px} }
 </style>
 </head>
 <body>
@@ -94,22 +111,21 @@
       </div>
     </div>
   </div>
+  <div id="listCard" class="card hidden">
+    <div class="inline" style="justify-content:space-between">
+      <h2 style="margin:0">🧾 跟團名單 <span class="small" id="custCount"></span></h2>
+      <button class="btn-line btn-sm" onclick="loadCustList()">↻ 更新</button>
+    </div>
+    <div id="custList" style="margin-top:10px"><p class="small">載入中…</p></div>
+  </div>
   <div id="regForm" class="card hidden">
-    <h2>我要跟團</h2>
+    <h2>＋ 我要跟團(加一列)</h2>
     <div class="field"><label>你的名字（讓團購主認得出你）</label><input id="regName" placeholder="例如:王小明 / Cloud" /></div>
     <div class="field"><label>數量</label><input id="regQty" type="number" value="1" min="1" inputmode="numeric" style="max-width:120px" /></div>
-    <button class="btn btn-primary" id="regBtn" onclick="submitReg()">送出登記</button>
+    <button class="btn btn-primary" id="regBtn" onclick="submitReg()">加入名單</button>
     <div class="msg" id="regMsg"></div>
   </div>
-  <div id="regDone" class="card hidden">
-    <div class="done">
-      <div class="big">✅</div>
-      <p style="font-size:19px;font-weight:800;margin:8px 0 4px">登記成功!</p>
-      <p class="small" id="regDoneText"></p>
-      <button class="btn btn-ghost" style="margin-top:14px;max-width:200px;margin-left:auto;margin-right:auto" onclick="againReg()">再登記一筆</button>
-    </div>
-  </div>
-  <p class="small" style="text-align:center;opacity:.7">此頁只會把你的登記送給團購主,不會公開你的資料。</p>
+  <p class="small" style="text-align:center;opacity:.7">你只能新增自己的一列;別人的登記只能看、不能改。要修改或取消請找團購主。</p>
 </div>
 
 <!-- 團購主管理頁 -->
@@ -151,10 +167,13 @@
 
   <div id="teamArea" class="hidden">
     <div class="card">
-      <div class="inline" style="justify-content:space-between;align-items:flex-start">
-        <div style="flex:1;min-width:0">
-          <div class="prodname" id="mProduct" style="font-size:18px">—</div>
-          <div class="small" id="mMeta" style="margin-top:4px"></div>
+      <div class="inline" style="justify-content:space-between;align-items:flex-start;gap:10px">
+        <div style="display:flex;gap:11px;align-items:flex-start;flex:1;min-width:0">
+          <img id="mImg" alt="" style="width:60px;height:60px;object-fit:cover;border-radius:10px;border:1px solid var(--line);display:none;flex:0 0 auto" />
+          <div style="flex:1;min-width:0">
+            <div class="prodname" id="mProduct" style="font-size:18px">—</div>
+            <div class="small" id="mMeta" style="margin-top:4px"></div>
+          </div>
         </div>
         <span class="pill" id="mPill">—</span>
       </div>
@@ -165,6 +184,7 @@
         <button class="btn-danger btn-sm" onclick="deleteTeam()">刪除團</button>
       </div>
       <div id="editForm" class="hidden" style="border-top:1px solid #eef0f5;margin-top:12px;padding-top:12px">
+        <div class="field"><label>商品圖片（可新增或更換）</label><input id="eFile" type="file" accept="image/*" /><div id="eThumb" style="margin-top:8px"></div></div>
         <div class="field"><label>商品名稱</label><input id="eProduct" /></div>
         <div class="row2">
           <div class="field"><label>售價</label><input id="ePrice" type="number" /></div>
@@ -222,7 +242,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_J9BOQRnCz_0nhrLJxshQZw_QrWrB61f";
 
 const WEEKDAYS=["星期日","星期一","星期二","星期三","星期四","星期五","星期六"];
 const HEADERS=["日期","狀態","到貨日","品項","商品位置","訂購者","取貨日期","售價","數量","銷售金額","總成本","總獲利","星期"];
-let sb=null, teams=[], activeId=null, orders=[], pollTimer=null, npImage="";
+let sb=null, teams=[], activeId=null, orders=[], pollTimer=null, npImage="", editImage=undefined;
 
 function ready(){ return /^https?:\/\//.test(SUPABASE_URL) && (SUPABASE_ANON_KEY||"").length>20 && SUPABASE_URL.indexOf("PASTE_")<0; }
 function $(id){ return document.getElementById(id); }
@@ -274,11 +294,12 @@ async function renderCustomer(){
   $("custNote").textContent = t.note||"";
   const st=teamState(t);
   const sEl=$("custStatus");
+  $("listCard").classList.remove("hidden");
   if(st==="closed"){
-    sEl.innerHTML='<div class="banner b-red">此團已結單,無法再登記囉。</div>';
+    sEl.innerHTML='<div class="banner b-red">此團已結單,無法再登記囉(名單如下)。</div>';
     $("regForm").classList.add("hidden");
   } else if(st==="notopen"){
-    sEl.innerHTML='<div class="banner b-warn">尚未開團,'+mdOf(t.open_at)+' 開始。你仍可先登記,我們會記錄下來。</div>';
+    sEl.innerHTML='<div class="banner b-warn">尚未開團,'+mdOf(t.open_at)+' 開始。你仍可先加入名單,我們會記錄下來。</div>';
     $("regForm").classList.remove("hidden");
   } else {
     const dc=daysTo(t.close_at);
@@ -286,11 +307,26 @@ async function renderCustomer(){
     sEl.innerHTML='<div class="banner '+(dc!=null&&dc<=1?"b-red":"b-ok")+'">'+txt+'</div>';
     $("regForm").classList.remove("hidden");
   }
-  // 已跟團人數(只顯示數字,不公開名單)
+  loadCustList();
+  clearInterval(custPoll); custPoll=setInterval(loadCustList, 20000);
+}
+let custPoll=null;
+async function loadCustList(){
+  if(!custTeam) return;
   try{
-    const { count } = await sb.from("gb_orders").select("id",{count:"exact",head:true}).eq("team_id",t.id);
-    if(count!=null && count>0){ const d=$("custDates"); d.textContent = d.textContent + (d.textContent?"　":"") + "· 已有 "+count+" 人跟團"; }
-  }catch(e){}
+    const { data } = await sb.from("gb_orders").select("customer,qty").eq("team_id",custTeam.id).order("created_at",{ascending:true});
+    renderCustList(data||[]);
+  }catch(e){ $("custList").innerHTML='<p class="small">名單載入失敗,按「↻ 更新」再試。</p>'; }
+}
+function renderCustList(list){
+  $("custCount").textContent="("+list.length+" 人)";
+  const box=$("custList");
+  if(list.length===0){ box.innerHTML='<p class="small">還沒有人跟團,當第一個吧!</p>'; return; }
+  let tq=0;
+  let h='<div style="overflow-x:auto"><table><thead><tr><th>訂購者</th><th class="num">數量</th></tr></thead><tbody>';
+  list.forEach(function(o){ tq+=Number(o.qty)||0; h+='<tr><td>'+escHtml(o.customer)+'</td><td class="num">'+o.qty+'</td></tr>'; });
+  h+='</tbody><tfoot><tr><td>合計</td><td class="num">'+tq+'</td></tr></tfoot></table></div>';
+  box.innerHTML=h;
 }
 async function submitReg(){
   const name=$("regName").value.trim();
@@ -302,18 +338,19 @@ async function submitReg(){
     // 溫和提醒:同名是否已登記過(只查自己)
     try{
       const { count } = await sb.from("gb_orders").select("id",{count:"exact",head:true}).eq("team_id",custTeam.id).eq("customer",name);
-      if(count && count>0){ if(!confirm("你之前好像已經登記過了,要再登記一筆嗎?")){ btn.disabled=false; btn.textContent="送出登記"; return; } }
+      if(count && count>0){ if(!confirm("你之前好像已經登記過了,要再加一筆嗎?")){ btn.disabled=false; btn.textContent="加入名單"; return; } }
     }catch(e){}
     const { error } = await sb.from("gb_orders").insert({ team_id: custTeam.id, customer: name, qty: qty });
     if(error) throw error;
-    $("regForm").classList.add("hidden"); $("regDone").classList.remove("hidden");
-    $("regDoneText").innerHTML = "已幫你登記「<b>"+escHtml(name)+"</b> ×"+qty+"」給團購主。"+(custTeam.close_at?("<br>結單日:"+mdOf(custTeam.close_at)):"");
+    btn.disabled=false; btn.textContent="加入名單";
+    msg.innerHTML="✅ 已把「<b>"+escHtml(name)+"</b> ×"+qty+"」加入名單!"; msg.className="msg msg-ok";
+    $("regName").value=""; $("regQty").value="1";
+    loadCustList();
   }catch(e){
-    btn.disabled=false; btn.textContent="送出登記";
+    btn.disabled=false; btn.textContent="加入名單";
     msg.textContent="送出失敗:"+(e.message||e)+"(請稍後再試)"; msg.className="msg msg-warn";
   }
 }
-function againReg(){ $("regDone").classList.add("hidden"); $("regName").value=""; $("regQty").value="1"; $("regBtn").disabled=false; $("regBtn").textContent="送出登記"; $("regMsg").textContent=""; $("regForm").classList.remove("hidden"); }
 
 /* ===================== 團購主管理頁 ===================== */
 async function initManager(){
@@ -334,9 +371,10 @@ async function loadTeams(){
 }
 function toggleNew(){ $("newForm").classList.toggle("hidden"); }
 function bindImage(){
-  const f=$("npFile"); if(!f)return;
-  f.addEventListener("change", function(e){ const file=e.target.files[0]; if(!file||!file.type.startsWith("image/")){ e.target.value=""; return; }
-    const r=new FileReader(); r.onload=async function(){ npImage=await makeThumb(r.result); $("npThumb").innerHTML = npImage? '<img src="'+npImage+'" style="width:80px;height:80px;object-fit:cover;border-radius:10px;border:1px solid #e5e7eb"/>':''; }; r.readAsDataURL(file); e.target.value=""; });
+  const f=$("npFile"); if(f){ f.addEventListener("change", function(e){ const file=e.target.files[0]; if(!file||!file.type.startsWith("image/")){ e.target.value=""; return; }
+    const r=new FileReader(); r.onload=async function(){ npImage=await makeThumb(r.result); $("npThumb").innerHTML = npImage? '<img src="'+npImage+'" style="width:80px;height:80px;object-fit:cover;border-radius:10px;border:1px solid #e5e7eb"/>':'<span class="small">這張圖讀不到(可能是 iPhone HEIC),請換一張 JPG/PNG</span>'; }; r.readAsDataURL(file); e.target.value=""; }); }
+  const ef=$("eFile"); if(ef){ ef.addEventListener("change", function(e){ const file=e.target.files[0]; if(!file||!file.type.startsWith("image/")){ e.target.value=""; return; }
+    const r=new FileReader(); r.onload=async function(){ editImage=await makeThumb(r.result); $("eThumb").innerHTML = editImage? '<img src="'+editImage+'" style="width:70px;height:70px;object-fit:cover;border-radius:10px;border:1px solid #e5e7eb"/>':'<span class="small">這張圖讀不到(可能是 iPhone HEIC),請換一張 JPG/PNG</span>'; }; r.readAsDataURL(file); e.target.value=""; }); }
 }
 function makeThumb(dataUrl, max){ max=max||300; return new Promise(function(res){ const img=new Image(); img.onload=function(){ try{ let w=img.width,h=img.height,s=Math.min(1,max/Math.max(w,h)); w=Math.round(w*s); h=Math.round(h*s); const c=document.createElement("canvas"); c.width=w; c.height=h; const x=c.getContext("2d"); x.fillStyle="#fff"; x.fillRect(0,0,w,h); x.drawImage(img,0,0,w,h); res(c.toDataURL("image/jpeg",0.6)); }catch(e){ res(""); } }; img.onerror=function(){ res(""); }; img.src=dataUrl; }); }
 
@@ -376,6 +414,7 @@ function renderActive(){
   $("teamArea").classList.toggle("hidden", !t);
   if(!t) return;
   $("mProduct").textContent=t.product;
+  const mi=$("mImg"); if(mi){ if(t.image){ mi.src=t.image; mi.style.display="block"; } else { mi.style.display="none"; mi.removeAttribute("src"); } }
   $("mMeta").textContent = "售價 $"+t.price+(t.cost?"｜成本 $"+t.cost:"")+(t.open_at?"｜開團 "+mdOf(t.open_at):"")+(t.close_at?"｜結單 "+mdOf(t.close_at):"");
   const st=teamState(t);
   const pill=$("mPill");
@@ -388,6 +427,7 @@ function renderActive(){
 function shareLink(id){ return location.origin + location.pathname + "?t=" + id; }
 function buildShare(t){
   const link=shareLink(t.id);
+  const local = location.protocol==="file:";
   const lines=[];
   lines.push("【幸せ雑貨店 團購】");
   lines.push("🛍 "+t.product+(t.price?"  $"+t.price:""));
@@ -396,20 +436,26 @@ function buildShare(t){
   lines.push("");
   lines.push("👉 點連結填「姓名+數量」就完成:");
   lines.push(link);
-  $("shareText").value = lines.join("\n");
+  const warn = local ? "⚠️ 你現在是用電腦「本機檔案」開啟的(file://),這個連結只有你打得開,客人無法使用!\n請先把 tuangou-signup.html 上傳到 GitHub Pages,再從線上網址開啟管理頁複製連結。\n\n" : "";
+  $("shareText").value = warn + lines.join("\n");
+  $("shareMsg").textContent = local ? "⚠️ 目前是本機開啟,連結無法分享(見上方說明)。" : "";
+  $("shareMsg").className = local ? "msg msg-warn" : "msg";
 }
 function copyShare(){ const ta=$("shareText"); ta.focus(); ta.select(); try{document.execCommand("copy");}catch(e){} $("shareMsg").textContent="已複製分享訊息,去 LINE 貼上吧。"; $("shareMsg").className="msg msg-ok"; }
 function copyLink(){ const t=activeTeam(); if(!t)return; const tmp=document.createElement("textarea"); tmp.value=shareLink(t.id); document.body.appendChild(tmp); tmp.select(); try{document.execCommand("copy");}catch(e){} document.body.removeChild(tmp); $("shareMsg").textContent="已複製客人連結。"; $("shareMsg").className="msg msg-ok"; }
 
 function editTeam(){
   const t=activeTeam(); if(!t)return;
+  editImage=undefined;
   $("eProduct").value=t.product; $("ePrice").value=t.price; $("eCost").value=t.cost||""; $("eOpen").value=t.open_at||""; $("eClose").value=t.close_at||""; $("eNote").value=t.note||"";
+  $("eThumb").innerHTML = t.image ? '<img src="'+t.image+'" style="width:70px;height:70px;object-fit:cover;border-radius:10px;border:1px solid #e5e7eb"/>' : '<span class="small">尚無圖片</span>';
   $("editForm").classList.toggle("hidden");
 }
 async function saveEdit(){
   const t=activeTeam(); if(!t)return;
   const patch={ product:$("eProduct").value.trim()||t.product, price:Number($("ePrice").value)||0, cost:Number($("eCost").value)||0, open_at:$("eOpen").value||null, close_at:$("eClose").value||null, note:$("eNote").value.trim()||null };
-  try{ const { error } = await sb.from("gb_teams").update(patch).eq("id",t.id); if(error) throw error; await loadTeams(); renderTeamList(); renderActive(); }
+  if(editImage!==undefined) patch.image=editImage;
+  try{ const { error } = await sb.from("gb_teams").update(patch).eq("id",t.id); if(error) throw error; editImage=undefined; await loadTeams(); renderTeamList(); renderActive(); }
   catch(e){ alert("儲存失敗:"+(e.message||e)); }
 }
 async function toggleClose(){
