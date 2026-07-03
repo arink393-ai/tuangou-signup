@@ -128,6 +128,22 @@
   <p class="small" style="text-align:center;opacity:.7">你只能新增自己的一列;別人的登記只能看、不能改。要修改或取消請找團購主。</p>
 </div>
 
+<!-- 客人登記首頁:列出所有開放中的團 -->
+<div id="joinView" class="wrap hidden">
+  <div class="brand">
+    <div class="jp">🛒 幸せ雑貨店</div>
+    <div class="romaji">しあわせ ざっかてん · 團購登記</div>
+    <div class="sub">找到想跟的團,填「姓名 + 數量」就完成 😊</div>
+  </div>
+  <div class="inline" style="justify-content:flex-end;margin-bottom:6px">
+    <button class="btn-line btn-sm" onclick="loadJoinTeams()">↻ 重新整理</button>
+  </div>
+  <div id="joinLoading" class="card"><p class="small">載入中…</p></div>
+  <div id="joinEmpty" class="card hidden"><p style="text-align:center;color:#9aa0b2;padding:22px 0;margin:0">目前沒有開放中的團,晚點再來看看 😊</p></div>
+  <div id="joinList"></div>
+  <p class="small" style="text-align:center;opacity:.75;margin-top:4px">你只能新增自己的一列;別人的登記只能看、不能改。要修改或取消請找團購主。</p>
+</div>
+
 <!-- 團購主管理頁 -->
 <div id="mgrView" class="wrap hidden">
   <div class="brand">
@@ -200,17 +216,6 @@
     </div>
 
     <div class="card">
-      <h2>📣 分享給客人</h2>
-      <p class="small" style="margin:-4px 0 10px">複製下面的訊息(含連結和開團/結單時間)貼到 LINE 記事本或群組就好。</p>
-      <textarea id="shareText" readonly rows="5" style="font-size:13px;background:#f7f9ff" onfocus="this.select()"></textarea>
-      <div class="two" style="margin-top:8px">
-        <button class="btn-primary btn" onclick="copyShare()">📋 複製分享訊息</button>
-        <button class="btn-ghost btn" onclick="copyLink()">只複製連結</button>
-      </div>
-      <div class="msg" id="shareMsg"></div>
-    </div>
-
-    <div class="card">
       <div class="inline" style="justify-content:space-between">
         <h2 style="margin:0">📝 登記名單 <span class="small" id="mCount"></span></h2>
         <button class="btn-line btn-sm" onclick="loadOrders(activeId,true)">↻ 重新整理</button>
@@ -266,8 +271,10 @@ window.addEventListener("DOMContentLoaded", function(){
   if(!ready()){ $("setup").classList.remove("hidden"); return; }
   try{ sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); }
   catch(e){ $("setup").classList.remove("hidden"); return; }
-  const t = new URLSearchParams(location.search).get("t");
-  if(t){ initCustomer(t); } else { initManager(); }
+  const params = new URLSearchParams(location.search);
+  if(params.get("t")){ initCustomer(params.get("t")); }
+  else if(params.has("admin")){ initManager(); }
+  else { initJoin(); }
 });
 
 /* ===================== 客人登記頁 ===================== */
@@ -352,6 +359,94 @@ async function submitReg(){
   }
 }
 
+/* ===================== 客人登記首頁(所有開放團) ===================== */
+let joinTeams=[], joinPoll=null;
+async function initJoin(){
+  $("joinView").classList.remove("hidden");
+  await loadJoinTeams();
+  clearInterval(joinPoll); joinPoll=setInterval(loadJoinTeams, 25000);
+}
+async function loadJoinTeams(){
+  try{
+    const { data, error } = await sb.from("gb_teams").select("*").order("created_at",{ascending:false});
+    if(error) throw error;
+    joinTeams = (data||[]).filter(function(t){ return teamState(t)!=="closed"; });
+    // 開團中排前面,再來是即將開團;各自依結單日近的在前
+    joinTeams.sort(function(a,b){
+      const sa=teamState(a)==="open"?0:1, sb2=teamState(b)==="open"?0:1;
+      if(sa!==sb2) return sa-sb2;
+      const da=daysTo(a.close_at), db=daysTo(b.close_at);
+      if(da==null) return 1; if(db==null) return -1; return da-db;
+    });
+    $("joinLoading").classList.add("hidden");
+    renderJoin();
+  }catch(e){
+    $("joinLoading").innerHTML='<div class="banner b-red">載入失敗:'+escHtml(e.message||e)+'</div>';
+  }
+}
+function renderJoin(){
+  const box=$("joinList");
+  if(joinTeams.length===0){ box.innerHTML=""; $("joinEmpty").classList.remove("hidden"); return; }
+  $("joinEmpty").classList.add("hidden");
+  box.innerHTML = joinTeams.map(function(t){
+    const st=teamState(t), dc=daysTo(t.close_at);
+    let badge, bcls;
+    if(st==="notopen"){ badge="尚未開團 · "+mdOf(t.open_at)+" 開始"; bcls="b-warn"; }
+    else if(dc===0){ badge="⏰ 今天結單!"; bcls="b-red"; }
+    else if(dc!=null){ badge="開團中 · 剩 "+dc+" 天結單("+mdOf(t.close_at)+")"; bcls=(dc<=1?"b-red":"b-ok"); }
+    else { badge="開團中"; bcls="b-ok"; }
+    const img = t.image? '<img src="'+t.image+'" alt="" style="width:76px;height:76px;object-fit:cover;border-radius:12px;border:1px solid var(--line);flex:0 0 auto"/>' : "";
+    const note = t.note? '<div class="small" style="margin-top:6px;white-space:pre-wrap">'+escHtml(t.note)+'</div>' : "";
+    return '<div class="card">'
+      + '<div class="banner '+bcls+'" style="margin-bottom:12px">'+badge+'</div>'
+      + '<div class="prod" style="margin-bottom:12px">'+img
+        + '<div style="flex:1;min-width:0"><div class="prodname">'+escHtml(t.product)+'</div>'
+        + (t.price? '<div class="price">$'+t.price+'</div>':'') + note + '</div></div>'
+      + '<div class="inline" style="justify-content:space-between"><div style="font-weight:700">🧾 跟團名單 <span class="small" id="jc_'+t.id+'"></span></div></div>'
+      + '<div id="jl_'+t.id+'" style="margin-top:8px"><p class="small">載入中…</p></div>'
+      + '<div style="border-top:1px solid #eef0f5;margin-top:12px;padding-top:12px">'
+        + '<div class="row2">'
+          + '<div class="field" style="margin-bottom:0"><label>你的名字</label><input id="jn_'+t.id+'" placeholder="例如:王小明 / Cloud" /></div>'
+          + '<div class="field" style="margin-bottom:0"><label>數量</label><input id="jq_'+t.id+'" type="number" value="1" min="1" inputmode="numeric" /></div>'
+        + '</div>'
+        + '<button class="btn btn-primary" style="margin-top:10px" onclick="joinSubmit(\''+t.id+'\')">＋ 我要跟團(加一列)</button>'
+        + '<div class="msg" id="jm_'+t.id+'"></div>'
+      + '</div>'
+    + '</div>';
+  }).join("");
+  joinTeams.forEach(function(t){ loadJoinList(t.id); });
+}
+async function loadJoinList(id){
+  try{
+    const { data } = await sb.from("gb_orders").select("customer,qty").eq("team_id",id).order("created_at",{ascending:true});
+    const list=data||[]; const cEl=$("jc_"+id), box=$("jl_"+id); if(!box) return;
+    if(cEl) cEl.textContent="("+list.length+" 人)";
+    if(list.length===0){ box.innerHTML='<p class="small">還沒有人跟團,當第一個吧!</p>'; return; }
+    let tq=0; let h='<div style="overflow-x:auto"><table><thead><tr><th>訂購者</th><th class="num">數量</th></tr></thead><tbody>';
+    list.forEach(function(o){ tq+=Number(o.qty)||0; h+='<tr><td>'+escHtml(o.customer)+'</td><td class="num">'+o.qty+'</td></tr>'; });
+    h+='</tbody><tfoot><tr><td>合計</td><td class="num">'+tq+'</td></tr></tfoot></table></div>';
+    box.innerHTML=h;
+  }catch(e){ const box=$("jl_"+id); if(box) box.innerHTML='<p class="small">名單載入失敗,按「↻ 重新整理」再試。</p>'; }
+}
+async function joinSubmit(id){
+  const t=joinTeams.find(function(x){ return x.id===id; }); if(!t) return;
+  const nEl=$("jn_"+id), qEl=$("jq_"+id), msg=$("jm_"+id);
+  const name=(nEl.value||"").trim();
+  const qty=Math.max(1, parseInt(qEl.value,10)||1);
+  if(!name){ msg.textContent="請先填你的名字喔。"; msg.className="msg msg-warn"; nEl.focus(); return; }
+  if(teamState(t)==="closed"){ msg.textContent="這團剛好結單了,無法再登記。"; msg.className="msg msg-warn"; return; }
+  msg.textContent="送出中…"; msg.className="msg";
+  try{
+    const { error } = await sb.from("gb_orders").insert({ team_id:id, customer:name, qty:qty });
+    if(error) throw error;
+    msg.innerHTML="✅ 已把「<b>"+escHtml(name)+"</b> ×"+qty+"」加入名單!"; msg.className="msg msg-ok";
+    nEl.value=""; qEl.value="1";
+    loadJoinList(id);
+  }catch(e){
+    msg.textContent="送出失敗:"+(e.message||e)+"(請稍後再試)"; msg.className="msg msg-warn";
+  }
+}
+
 /* ===================== 團購主管理頁 ===================== */
 async function initManager(){
   $("mgrView").classList.remove("hidden");
@@ -422,27 +517,7 @@ function renderActive(){
   pill.className = "pill "+(st==="closed"?"pill-closed":(st==="notopen"?"pill-soon":"pill-open"));
   $("mCloseBtn").textContent = t.status==="closed"?"重新開單":"結單";
   $("editForm").classList.add("hidden");
-  buildShare(t);
 }
-function shareLink(id){ return location.origin + location.pathname + "?t=" + id; }
-function buildShare(t){
-  const link=shareLink(t.id);
-  const local = location.protocol==="file:";
-  const lines=[];
-  lines.push("【幸せ雑貨店 團購】");
-  lines.push("🛍 "+t.product+(t.price?"  $"+t.price:""));
-  if(t.open_at||t.close_at) lines.push("🕒 "+(t.open_at?"開團 "+mdOf(t.open_at):"")+(t.close_at?"　結單 "+mdOf(t.close_at):""));
-  if(t.note) lines.push("📌 "+t.note);
-  lines.push("");
-  lines.push("👉 點連結填「姓名+數量」就完成:");
-  lines.push(link);
-  const warn = local ? "⚠️ 你現在是用電腦「本機檔案」開啟的(file://),這個連結只有你打得開,客人無法使用!\n請先把 tuangou-signup.html 上傳到 GitHub Pages,再從線上網址開啟管理頁複製連結。\n\n" : "";
-  $("shareText").value = warn + lines.join("\n");
-  $("shareMsg").textContent = local ? "⚠️ 目前是本機開啟,連結無法分享(見上方說明)。" : "";
-  $("shareMsg").className = local ? "msg msg-warn" : "msg";
-}
-function copyShare(){ const ta=$("shareText"); ta.focus(); ta.select(); try{document.execCommand("copy");}catch(e){} $("shareMsg").textContent="已複製分享訊息,去 LINE 貼上吧。"; $("shareMsg").className="msg msg-ok"; }
-function copyLink(){ const t=activeTeam(); if(!t)return; const tmp=document.createElement("textarea"); tmp.value=shareLink(t.id); document.body.appendChild(tmp); tmp.select(); try{document.execCommand("copy");}catch(e){} document.body.removeChild(tmp); $("shareMsg").textContent="已複製客人連結。"; $("shareMsg").className="msg msg-ok"; }
 
 function editTeam(){
   const t=activeTeam(); if(!t)return;
