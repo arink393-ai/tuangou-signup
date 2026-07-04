@@ -527,7 +527,8 @@ function renderTeamCard(t){
   h += '<div style="border-top:1px solid #eef0f5;margin-top:12px;padding-top:12px">';
   h += '<div class="inline" style="justify-content:space-between"><h2 style="margin:0;font-size:16px">📝 登記名單 <span class="small" id="mCount_'+t.id+'">('+orders.length+' 筆)</span></h2></div>';
   h += '<div id="ordersBox_'+t.id+'" style="margin-top:10px">'+renderOrdersTable(t, orders)+'</div>';
-  h += '<div class="two" style="margin-top:10px"><button class="btn-primary btn" onclick="copyExcel(\''+t.id+'\')">📋 複製到 Excel</button><button class="btn-line btn" onclick="downloadCSV(\''+t.id+'\')">⬇ 下載 CSV</button></div>';
+  h += '<button class="btn btn-primary" onclick="downloadForERP(\''+t.id+'\')" style="margin-top:10px">⬇ 匯出給進銷存（CSV）</button>';
+  h += '<div class="two" style="margin-top:10px"><button class="btn-primary btn" onclick="copyExcel(\''+t.id+'\')">📋 複製到 Excel</button><button class="btn-line btn" onclick="downloadCSV(\''+t.id+'\')">⬇ 下載 CSV（完整）</button></div>';
   h += '<div class="msg" id="expMsg_'+t.id+'"></div>';
   h += '</div>';
   h += '</div>';
@@ -621,6 +622,21 @@ function matrixFor(t, orders){ const wd=weekdayOf(t.open_at); const c=Number(t.c
   return orders.map(function(o){ const qty=Number(o.qty)||0, amt=qty*t.price; return [t.open_at||"","","",t.product,"",o.customer,"",t.price,qty,amt,qty*c,qty*(t.price-c),wd]; }); }
 function tsvTextFor(t, orders){ return [HEADERS].concat(matrixFor(t,orders)).map(function(r){return r.join("\t");}).join("\n"); }
 function copyExcel(id){ const t=teamById(id); if(!t) return; copyToClipboard(tsvTextFor(t, ordersMap[id]||[])); flashMsg(id,"已複製,到 Excel/Google 試算表貼上即可。",true); }
+function downloadForERP(id){
+  const t=teamById(id); if(!t){ flashMsg(id,"請先選一個團購。",false); return; }
+  const orders=ordersMap[id]||[];
+  if(!orders.length){ flashMsg(id,"這個團還沒有登記。",false); return; }
+  try{
+    const head=["品項","數量","售價","訂購者"];
+    const rows=orders.map(function(o){ return [t.product, Number(o.qty)||0, t.price, o.customer]; });
+    const esc=function(c){ const s=String(c==null?"":c); return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; };
+    const csv="﻿"+[head].concat(rows).map(function(r){return r.map(esc).join(",");}).join("\r\n");
+    const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"}); const url=URL.createObjectURL(blob);
+    const a=document.createElement("a"); a.href=url; a.download=(t.product||"團購")+"_進銷存_"+today()+".csv";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+    flashMsg(id,"已匯出進銷存 CSV（品項/數量/售價/訂購者）。到進銷存 → 銷貨 → 團購匯入拉進去即可。",true);
+  }catch(e){ flashMsg(id,"下載被擋,請改用「複製到 Excel」貼到進銷存團購匯入。",false); }
+}
 function downloadCSV(id){
   const t=teamById(id); if(!t)return; const orders=ordersMap[id]||[];
   try{ const m=matrixFor(t,orders); const csv="﻿"+[HEADERS].concat(m).map(function(r){return r.map(function(c){const s=String(c==null?"":c); return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;}).join(",");}).join("\r\n");
