@@ -616,16 +616,15 @@ function renderTeamCard(t){
 
 function renderOrdersTable(t, orders){
   if(orders.length===0) return '<p class="small">還沒有人登記。把分享訊息貼到 LINE 吧。</p>';
-  let tq=0,ta=0,paid=0,picked=0;
-  let h='<div style="overflow-x:auto"><table><thead><tr><th>訂購者</th><th class="num">數量</th><th class="num">金額</th><th style="text-align:center">已付</th><th style="text-align:center">已取</th><th></th></tr></thead><tbody>';
-  orders.forEach(function(o){ const amt=(Number(o.qty)||0)*t.price; tq+=Number(o.qty)||0; ta+=amt; if(o.paid)paid++; if(o.picked)picked++;
-    h+='<tr><td>'+escHtml(o.customer)+'</td><td class="num">'+o.qty+'</td><td class="num">$'+amt+'</td>'
-      +'<td style="text-align:center"><input type="checkbox" '+(o.paid?"checked":"")+' disabled title="付款須由 ERP 團購結帳建立銷貨單" style="width:20px;height:20px"/>'+(o.document_no?'<div class="small">'+escHtml(o.document_no)+'</div>':'')+'</td>'
-      +'<td style="text-align:center"><input type="checkbox" '+(o.picked?"checked":"")+' '+(o.paid?'onchange="updOrder(\''+t.id+'\',\''+o.id+'\',this.checked,this)"':'disabled title="完成付款後才能標記取貨"')+' style="width:20px;height:20px"/></td>'
+  let tq=0,ta=0,picked=0;
+  let h='<div style="overflow-x:auto"><table><thead><tr><th>訂購者</th><th class="num">數量</th><th class="num">金額</th><th style="text-align:center">已取</th><th></th></tr></thead><tbody>';
+  orders.forEach(function(o){ const amt=(Number(o.qty)||0)*t.price; tq+=Number(o.qty)||0; ta+=amt; if(o.picked)picked++;
+    h+='<tr><td>'+escHtml(o.customer)+(o.document_no?'<div class="small">銷貨單 '+escHtml(o.document_no)+'</div>':'')+'</td><td class="num">'+o.qty+'</td><td class="num">$'+amt+'</td>'
+      +'<td style="text-align:center"><input type="checkbox" '+(o.picked?"checked":"")+' '+(o.paid?'onchange="updOrder(\''+t.id+'\',\''+o.id+'\',this.checked,this)" title="結帳完成後勾選已取"':'disabled title="請先到 ERP 完成團購結帳"')+' style="width:20px;height:20px"/>'+(o.paid?'':'<div class="small">請先結帳</div>')+'</td>'
       +'<td>'+(!o.paid&&!o.picked&&!o.sale_id?'<button class="btn-sm" id="orderDelete_'+o.id+'" style="background:none;color:#dc2626;font-size:18px;padding:0 6px" onclick="delOrder(\''+t.id+'\',\''+o.id+'\')">×</button>':'')+'</td></tr>'; });
-  h+='</tbody><tfoot><tr><td>合計</td><td class="num">'+tq+'</td><td class="num">$'+ta+'</td><td colspan="3"></td></tr></tfoot></table></div>';
+  h+='</tbody><tfoot><tr><td>合計</td><td class="num">'+tq+'</td><td class="num">$'+ta+'</td><td colspan="2"></td></tr></tfoot></table></div>';
   const c=Number(t.cost)||0, costTot=tq*c, profit=ta-costTot;
-  h+='<div class="small" style="margin-top:8px">💰 已付款 '+paid+'/'+orders.length+' 筆　📦 已取貨 '+picked+'/'+orders.length+' 筆<br>📈 營收 <b>$'+ta+'</b>'+(c?'　·　成本 $'+costTot+'　·　毛利 <b style="color:#16a34a">$'+profit+'</b>':'')+'<br>付款狀態由內部 ERP 團購結帳同步，此頁不直接改動付款或庫存。</div>';
+  h+='<div class="small" style="margin-top:8px">📦 已取貨 '+picked+'/'+orders.length+' 筆<br>🧾 登記總額 <b>$'+ta+'</b>'+(c?'　·　預估成本 $'+costTot+'　·　預估毛利 <b style="color:#16a34a">$'+profit+'</b>':'')+'<br>客人完成 ERP 結帳後，請直接勾選「已取」。</div>';
   return h;
 }
 function refreshOrdersUI(){
@@ -725,10 +724,10 @@ function printPickup(id){
   const t=teamById(id); if(!t)return; const orders=ordersMap[id]||[];
   let h='<h2>'+escHtml(t.product)+' — 取貨單</h2>';
   h+='<div>'+(t.open_at?'開團 '+mdOf(t.open_at):'')+(t.close_at?'　結單 '+mdOf(t.close_at):'')+'　售價 $'+t.price+'</div>';
-  h+='<table><thead><tr><th>訂購者</th><th>數量</th><th>金額</th><th>已付</th><th>已取</th></tr></thead><tbody>';
+  h+='<table><thead><tr><th>訂購者</th><th>數量</th><th>金額</th><th>已取</th></tr></thead><tbody>';
   let tq=0,ta=0;
-  orders.forEach(function(o){ const amt=(Number(o.qty)||0)*t.price; tq+=Number(o.qty)||0; ta+=amt; h+='<tr><td>'+escHtml(o.customer)+'</td><td>'+o.qty+'</td><td>$'+amt+'</td><td>'+(o.paid?'✓':'☐')+'</td><td>'+(o.picked?'✓':'☐')+'</td></tr>'; });
-  h+='</tbody><tfoot><tr><td>合計</td><td>'+tq+'</td><td>$'+ta+'</td><td></td><td></td></tr></tfoot></table>';
+  orders.forEach(function(o){ const amt=(Number(o.qty)||0)*t.price; tq+=Number(o.qty)||0; ta+=amt; h+='<tr><td>'+escHtml(o.customer)+'</td><td>'+o.qty+'</td><td>$'+amt+'</td><td>'+(o.picked?'✓':'☐')+'</td></tr>'; });
+  h+='</tbody><tfoot><tr><td>合計</td><td>'+tq+'</td><td>$'+ta+'</td><td></td></tr></tfoot></table>';
   $("printArea").innerHTML=h; window.print();
 }
 </script>
