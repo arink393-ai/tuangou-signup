@@ -77,10 +77,13 @@
   .thumb img{width:80px;height:80px;object-fit:cover;border-radius:10px;border:1px solid var(--line)}
 
   .done{text-align:center;padding:20px 6px}.done .big{font-size:52px}
+  .manager-login{max-width:520px;margin-left:auto;margin-right:auto}.manager-login .btn{margin-top:4px}
+  .manager-userbar{display:flex;justify-content:space-between;align-items:center;gap:12px}.manager-userbar b,.manager-userbar span{display:block}.manager-userbar span{margin-top:3px}.manager-userbar .toolbtns{margin:0;justify-content:flex-end}
   code{background:#eef2fd;padding:1px 6px;border-radius:6px;font-size:13px;word-break:break-all;color:#1c357f}
   a{color:var(--navy-bright)}
   .hidden{display:none}
   .printonly{display:none}
+  @media(max-width:560px){.manager-userbar{align-items:stretch;flex-direction:column}.manager-userbar .toolbtns>button,.manager-userbar .toolbtns>a{flex:1;text-align:center}.row2{grid-template-columns:1fr}}
   @media print{ body{background:#fff!important} body>*{display:none!important} #printArea{display:block!important} #printArea table{width:100%;border-collapse:collapse} #printArea th,#printArea td{border:1px solid #444;padding:7px 9px;font-size:14px} }
 </style>
 </head>
@@ -157,6 +160,24 @@
     <div class="sub">開團 → 複製連結貼到 LINE → 客人自己填姓名和數量 → 這裡即時彙整、匯出 Excel。</div>
   </div>
 
+  <div id="mgrLogin" class="card manager-login">
+    <h2>🔐 店主／店長登入</h2>
+    <p class="small">請使用內部 ERP 的店主或店長帳號。系統不開放自行註冊，登入後資料庫仍會再次檢查門市角色。</p>
+    <form onsubmit="managerLogin(event)">
+      <div class="field"><label for="mgrEmail">電子郵件</label><input id="mgrEmail" type="email" autocomplete="username" required placeholder="name@shop.com" /></div>
+      <div class="field"><label for="mgrPassword">密碼</label><input id="mgrPassword" type="password" autocomplete="current-password" minlength="8" required placeholder="至少 8 個字元" /></div>
+      <button class="btn btn-primary" id="mgrLoginBtn" type="submit">安全登入</button>
+      <div class="msg" id="mgrLoginMsg" role="status"></div>
+    </form>
+    <p class="small" style="margin-bottom:0"><a href="./">返回客人團購登記頁</a></p>
+  </div>
+
+  <div id="mgrApp" class="hidden">
+  <div class="card manager-userbar">
+    <div><b id="mgrStoreName">門市團購管理</b><span class="small" id="mgrIdentity"></span></div>
+    <div class="toolbtns"><a class="btn-line btn-sm" href="./">客人登記頁</a><button class="btn-line btn-sm" onclick="managerLogout()">安全登出</button></div>
+  </div>
+
   <div class="card">
     <div class="inline" style="justify-content:space-between;margin-bottom:10px">
       <h2 style="margin:0">📋 所有團</h2>
@@ -168,19 +189,19 @@
     <div id="newForm" class="hidden" style="border-top:1px solid #eef0f5;padding-top:12px">
       <div id="npImgWrap" style="margin-bottom:10px">
         <label>商品圖片（選填）</label>
-        <input id="npFile" type="file" accept="image/*" />
+        <input id="npFile" type="file" accept="image/jpeg,image/png,image/webp" />
         <div id="npThumb" style="margin-top:8px"></div>
       </div>
       <div class="field"><label>商品名稱</label><input id="npProduct" placeholder="例如:韓國Temporary 香氛滾珠 30ml" /></div>
       <div class="row2">
         <div class="field"><label>售價</label><div class="inline"><span class="small">$</span><input id="npPrice" type="number" placeholder="179" /></div></div>
-        <div class="field"><label>成本/個（選填）</label><div class="inline"><span class="small">$</span><input id="npCost" type="number" placeholder="0" /></div></div>
+        <div class="field owner-only" id="npCostField"><label>成本/個（僅店主可見，選填）</label><div class="inline"><span class="small">$</span><input id="npCost" type="number" min="0" max="1000000" placeholder="0" /></div></div>
       </div>
       <div class="row2">
         <div class="field"><label>開團日期</label><input id="npOpen" type="date" /></div>
         <div class="field"><label>結單日期</label><input id="npClose" type="date" /></div>
       </div>
-      <div class="field"><label>備註（選填,客人看得到,例如到貨/取貨方式）</label><textarea id="npNote" rows="2" placeholder="例如:預計 7/5 到貨,門市自取"></textarea></div>
+      <div class="field"><label>備註（選填,客人看得到,例如到貨/取貨方式）</label><textarea id="npNote" rows="2" maxlength="500" placeholder="例如:預計 7/5 到貨,門市自取"></textarea></div>
       <button class="btn btn-primary" id="npBtn" onclick="createTeam()">建立這個團</button>
       <div class="msg" id="npMsg"></div>
     </div>
@@ -191,7 +212,8 @@
   <div id="teamGroups"></div>
 
   <div class="card" style="background:#f7f9ff">
-    <p class="small">💡 客人登記是即時存到雲端的。按「↻」就會看到最新名單(每 20 秒也會自動更新一次)。</p>
+    <p class="small">💡 客人登記是即時存到雲端的。按「↻」就會看到最新名單（每 20 秒也會自動更新一次）。付款請到內部 ERP「團購結帳」建立銷貨單並扣庫存。</p>
+  </div>
   </div>
 </div>
 
@@ -207,11 +229,13 @@ const SUPABASE_ANON_KEY = "sb_publishable_J9BOQRnCz_0nhrLJxshQZw_QrWrB61f";
 const WEEKDAYS=["星期日","星期一","星期二","星期三","星期四","星期五","星期六"];
 const HEADERS=["日期","狀態","到貨日","品項","商品位置","訂購者","取貨日期","售價","數量","銷售金額","總成本","總獲利","星期"];
 let sb=null, teams=[], ordersMap={}, pollTimer=null, npImage="", editImageMap={};
+let mgrStoreId=null, mgrRole=null, mgrUserEmail="";
 
 function ready(){ return /^https?:\/\//.test(SUPABASE_URL) && (SUPABASE_ANON_KEY||"").length>20 && SUPABASE_URL.indexOf("PASTE_")<0; }
 function $(id){ return document.getElementById(id); }
 function escHtml(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
-function escAttr(s){ return String(s==null?"":s).replace(/"/g,"&quot;").replace(/</g,"&lt;"); }
+function escAttr(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;"); }
+function safeImageSrc(s){ const v=String(s||""); return /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/]+={0,2}$/.test(v)?v:""; }
 function today(){ const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
 function weekdayOf(s){ if(!s)return""; const d=new Date(s+"T00:00:00"); return isNaN(d)?"":WEEKDAYS[d.getDay()]; }
 function daysTo(cd){ if(!cd)return null; const d=new Date(cd+"T00:00:00"); if(isNaN(d))return null; const t=new Date(); t.setHours(0,0,0,0); return Math.round((d-t)/86400000); }
@@ -264,7 +288,7 @@ async function renderCustomer(){
   const t=custTeam; $("custCard").classList.remove("hidden");
   $("custProduct").textContent=t.product;
   $("custPrice").textContent = t.price? ("$"+t.price) : "";
-  if(t.image){ $("custImg").src=t.image; $("custImg").classList.remove("hidden"); }
+  const image=safeImageSrc(t.image); if(image){ $("custImg").src=image; $("custImg").classList.remove("hidden"); }
   const dates = (t.open_at?("開團 "+mdOf(t.open_at)):"") + (t.close_at?("　結單 "+mdOf(t.close_at)):"");
   $("custDates").textContent = dates;
   $("custNote").textContent = t.note||"";
@@ -362,7 +386,7 @@ function renderJoin(){
     else if(dc===0){ badge="⏰ 今天結單!"; bcls="b-red"; }
     else if(dc!=null){ badge="開團中 · 剩 "+dc+" 天結單("+mdOf(t.close_at)+")"; bcls=(dc<=1?"b-red":"b-ok"); }
     else { badge="開團中"; bcls="b-ok"; }
-    const img = t.image? '<img src="'+t.image+'" alt="" style="width:76px;height:76px;object-fit:cover;border-radius:12px;border:1px solid var(--line);flex:0 0 auto"/>' : "";
+    const image=safeImageSrc(t.image); const img = image? '<img src="'+image+'" alt="" style="width:76px;height:76px;object-fit:cover;border-radius:12px;border:1px solid var(--line);flex:0 0 auto"/>' : "";
     const note = t.note? '<div class="small" style="margin-top:6px;white-space:pre-wrap">'+escHtml(t.note)+'</div>' : "";
     return '<div class="card">'
       + '<div class="banner '+bcls+'" style="margin-bottom:12px">'+badge+'</div>'
@@ -422,30 +446,70 @@ async function joinSubmit(id){
 /* ===================== 團購主管理頁 ===================== */
 async function initManager(){
   $("mgrView").classList.remove("hidden");
-  $("mgrView").innerHTML='<div class="brand"><div class="jp">🔒 團購管理已移至內部 ERP</div><div class="romaji">安全橋接已啟用</div></div>'
-    +'<div class="card"><h2>請從內部 PWA 開啟「團購結帳」</h2><p class="small">為了保護客人姓名、商品成本、付款與庫存資料，公開網站不再提供未登入的管理頁。店主、店長與收銀員登入內部 ERP 後，可依角色進行開團、商品連結、結帳、列印銷貨單與標記取貨。</p><p class="small"><a href="'+location.pathname+'">返回客人團購登記頁</a></p></div>';
+  $("npOpen").value=today();
+  bindImage();
+  try{
+    const { data, error } = await sb.auth.getUser();
+    if(error || !data.user){ showManagerLogin(""); return; }
+    await loadManagerContext(data.user);
+  }catch(e){ showManagerLogin(""); }
+}
+function showManagerLogin(message){
+  clearInterval(pollTimer); pollTimer=null; mgrStoreId=null; mgrRole=null; mgrUserEmail="";
+  $("mgrApp").classList.add("hidden"); $("mgrLogin").classList.remove("hidden");
+  const msg=$("mgrLoginMsg"); msg.textContent=message||""; msg.className="msg"+(message?" msg-warn":"");
+}
+async function managerLogin(event){
+  event.preventDefault();
+  const email=$("mgrEmail").value.trim(), password=$("mgrPassword").value;
+  const btn=$("mgrLoginBtn"), msg=$("mgrLoginMsg");
+  btn.disabled=true; btn.textContent="登入中…"; msg.textContent=""; msg.className="msg";
+  try{
+    const { data, error } = await sb.auth.signInWithPassword({email:email,password:password});
+    if(error || !data.user) throw new Error("帳號或密碼錯誤，或此帳號尚未完成啟用");
+    const allowed=await loadManagerContext(data.user);
+    if(allowed) $("mgrPassword").value="";
+  }catch(e){
+    msg.textContent=e.message||"登入失敗，請稍後再試"; msg.className="msg msg-warn";
+  }
+  btn.disabled=false; btn.textContent="安全登入";
+}
+async function loadManagerContext(user){
+  try{
+    const { data, error } = await sb.rpc("get_group_buy_manager_context");
+    if(error) throw error;
+    mgrStoreId=data.store_id; mgrRole=data.role; mgrUserEmail=user.email||"";
+    $("mgrStoreName").textContent=data.store_name||"門市團購管理";
+    $("mgrIdentity").textContent=(data.display_name||"") + "・" + (mgrRole==="owner"?"店主":"店長") + (mgrUserEmail?"・"+mgrUserEmail:"");
+    $("npCostField").classList.toggle("hidden",mgrRole!=="owner");
+    $("mgrLogin").classList.add("hidden"); $("mgrApp").classList.remove("hidden");
+    applyManagerData(data);
+    clearInterval(pollTimer); pollTimer=setInterval(refreshAll,20000);
+    return true;
+  }catch(e){
+    await sb.auth.signOut({scope:"local"});
+    showManagerLogin((e.message||"").includes("店主或店長") ? "此帳號沒有團購管理權限，請使用店主或店長帳號。" : "無法載入管理資料，請重新登入。" );
+    return false;
+  }
+}
+function applyManagerData(context){
+  teams=context.teams||[]; ordersMap={};
+  teams.forEach(function(team){ ordersMap[team.id]=team.orders||[]; });
+  renderAll();
 }
 async function refreshAll(){
-  await loadTeams();
-  await loadAllOrders();
-  renderAll();
-  clearInterval(pollTimer);
-  pollTimer=setInterval(async function(){ await loadAllOrders(); refreshOrdersUI(); }, 20000);
-}
-async function loadTeams(){
-  try{ const { data, error } = await sb.from("gb_teams").select("*").order("created_at",{ascending:false}); if(error) throw error; teams=data||[]; }
-  catch(e){ alert("讀取團失敗:"+(e.message||e)); teams=[]; }
-}
-async function loadAllOrders(){
-  if(teams.length===0){ ordersMap={}; return; }
+  if(!mgrStoreId) return;
   try{
-    const ids=teams.map(function(t){return t.id;});
-    const { data, error } = await sb.from("gb_orders").select("*").in("team_id",ids).order("created_at",{ascending:true});
+    const { data, error } = await sb.rpc("get_group_buy_manager_context");
     if(error) throw error;
-    const map={}; ids.forEach(function(id){ map[id]=[]; });
-    (data||[]).forEach(function(o){ (map[o.team_id]=map[o.team_id]||[]).push(o); });
-    ordersMap=map;
-  }catch(e){ /* 保留前一次的名單,下次重新整理再試 */ }
+    if(data.store_id!==mgrStoreId) throw new Error("門市權限已變更");
+    applyManagerData(data);
+  }catch(e){ alert("讀取管理資料失敗:"+(e.message||e)); }
+}
+async function managerLogout(){
+  await sb.auth.signOut({scope:"local"});
+  teams=[]; ordersMap={}; $("teamGroups").innerHTML="";
+  showManagerLogin("已安全登出此裝置。");
 }
 function toggleNew(){ $("newForm").classList.toggle("hidden"); }
 function bindImage(){
@@ -473,12 +537,14 @@ async function createTeam(){
   const close_at=$("npClose").value||null;
   const note=$("npNote").value.trim()||null;
   const msg=$("npMsg");
+  if(!mgrStoreId){ showManagerLogin("登入已逾時，請重新登入。"); return; }
   if(!product){ msg.textContent="請填商品名稱"; msg.className="msg msg-warn"; return; }
   const btn=$("npBtn"); btn.disabled=true; btn.textContent="建立中…"; msg.textContent="";
   try{
-    const row={ product, price, cost, open_at, close_at, note, status:"open" };
-    if(npImage) row.image=npImage;
-    const { error } = await sb.from("gb_teams").insert(row).select().single();
+    const { error } = await sb.rpc("create_group_buy",{
+      p_store_id:mgrStoreId,p_product:product,p_price:price,p_cost:mgrRole==="owner"?cost:0,
+      p_image:npImage||"",p_note:note||"",p_open_at:open_at,p_close_at:close_at,p_variant_id:null
+    });
     if(error) throw error;
     npImage=""; $("npThumb").innerHTML=""; ["npProduct","npPrice","npCost","npClose","npNote"].forEach(function(i){$(i).value="";}); $("npOpen").value=today();
     $("newForm").classList.add("hidden");
@@ -512,7 +578,7 @@ function renderTeamCard(t){
   const pillTxt = st==="closed"?"已結單":(st==="notopen"?"未開團":"接單中");
   const pillCls = st==="closed"?"pill-closed":(st==="notopen"?"pill-soon":"pill-open");
   const orders = ordersMap[t.id]||[];
-  const imgHtml = t.image? '<img src="'+t.image+'" alt="" style="width:60px;height:60px;object-fit:cover;border-radius:10px;border:1px solid var(--line);flex:0 0 auto"/>' : "";
+  const safeImage=safeImageSrc(t.image); const imgHtml = safeImage? '<img src="'+safeImage+'" alt="" style="width:60px;height:60px;object-fit:cover;border-radius:10px;border:1px solid var(--line);flex:0 0 auto"/>' : "";
   let h = '<div class="card" data-team="'+t.id+'">';
   h += '<div class="inline" style="justify-content:space-between;align-items:flex-start;gap:10px">';
   h += '<div style="display:flex;gap:11px;align-items:flex-start;flex:1;min-width:0">'+imgHtml;
@@ -522,19 +588,21 @@ function renderTeamCard(t){
   h += '</div>';
   h += '<div class="toolbtns">';
   h += '<button class="btn-line btn-sm" onclick="editTeam(\''+t.id+'\')">編輯</button>';
-  h += '<button class="btn-line btn-sm" onclick="toggleClose(\''+t.id+'\')">'+(t.status==="closed"?"重新開單":"結單")+'</button>';
+  h += '<button class="btn-line btn-sm" id="status_'+t.id+'" onclick="toggleClose(\''+t.id+'\')">'+(t.status==="closed"?"重新開單":"結單")+'</button>';
   h += '<button class="btn-line btn-sm" onclick="printPickup(\''+t.id+'\')">🖨 取貨單</button>';
   h += '<button class="btn-line btn-sm" onclick="copyShare(\''+t.id+'\')">📋 分享訊息</button>';
   h += '<button class="btn-line btn-sm" onclick="copyLink(\''+t.id+'\')">🔗 複製連結</button>';
-  h += '<button class="btn-danger btn-sm" onclick="deleteTeam(\''+t.id+'\')">刪除團</button>';
+  h += '<button class="btn-danger btn-sm" id="delete_'+t.id+'" onclick="deleteTeam(\''+t.id+'\')">刪除團</button>';
   h += '</div>';
   h += '<div id="editForm_'+t.id+'" class="hidden" style="border-top:1px solid #eef0f5;margin-top:12px;padding-top:12px">';
-  h += '<div class="field"><label>商品圖片（可新增或更換）</label><input type="file" accept="image/*" onchange="handleEditFile(event,\''+t.id+'\')" /><div id="eThumb_'+t.id+'" style="margin-top:8px">'+(t.image?'<img src="'+t.image+'" style="width:70px;height:70px;object-fit:cover;border-radius:10px;border:1px solid #e5e7eb"/>':'<span class="small">尚無圖片</span>')+'</div></div>';
+  h += '<div class="field"><label>商品圖片（可新增或更換）</label><input type="file" accept="image/jpeg,image/png,image/webp" onchange="handleEditFile(event,\''+t.id+'\')" /><div id="eThumb_'+t.id+'" style="margin-top:8px">'+(safeImage?'<img src="'+safeImage+'" style="width:70px;height:70px;object-fit:cover;border-radius:10px;border:1px solid #e5e7eb"/>':'<span class="small">尚無圖片</span>')+'</div></div>';
   h += '<div class="field"><label>商品名稱</label><input id="eProduct_'+t.id+'" value="'+escAttr(t.product)+'" /></div>';
-  h += '<div class="row2"><div class="field"><label>售價</label><input id="ePrice_'+t.id+'" type="number" value="'+t.price+'" /></div><div class="field"><label>成本/個</label><input id="eCost_'+t.id+'" type="number" value="'+(t.cost||"")+'" /></div></div>';
+  h += '<div class="'+(mgrRole==="owner"?"row2":"")+'"><div class="field"><label>售價</label><input id="ePrice_'+t.id+'" type="number" min="0" max="1000000" value="'+t.price+'" /></div>';
+  if(mgrRole==="owner") h += '<div class="field"><label>成本/個（僅店主可見）</label><input id="eCost_'+t.id+'" type="number" min="0" max="1000000" value="'+(t.cost||"")+'" /></div>';
+  h += '</div>';
   h += '<div class="row2"><div class="field"><label>開團日期</label><input id="eOpen_'+t.id+'" type="date" value="'+(t.open_at||"")+'" /></div><div class="field"><label>結單日期</label><input id="eClose_'+t.id+'" type="date" value="'+(t.close_at||"")+'" /></div></div>';
-  h += '<div class="field"><label>備註</label><textarea id="eNote_'+t.id+'" rows="2">'+escHtml(t.note||"")+'</textarea></div>';
-  h += '<button class="btn btn-primary" onclick="saveEdit(\''+t.id+'\')">儲存</button>';
+  h += '<div class="field"><label>備註</label><textarea id="eNote_'+t.id+'" rows="2" maxlength="500">'+escHtml(t.note||"")+'</textarea></div>';
+  h += '<button class="btn btn-primary" id="save_'+t.id+'" onclick="saveEdit(\''+t.id+'\')">儲存</button>';
   h += '</div>';
   h += '<div style="border-top:1px solid #eef0f5;margin-top:12px;padding-top:12px">';
   h += '<div class="inline" style="justify-content:space-between"><h2 style="margin:0;font-size:16px">📝 登記名單 <span class="small" id="mCount_'+t.id+'">('+orders.length+' 筆)</span></h2></div>';
@@ -552,12 +620,12 @@ function renderOrdersTable(t, orders){
   let h='<div style="overflow-x:auto"><table><thead><tr><th>訂購者</th><th class="num">數量</th><th class="num">金額</th><th style="text-align:center">已付</th><th style="text-align:center">已取</th><th></th></tr></thead><tbody>';
   orders.forEach(function(o){ const amt=(Number(o.qty)||0)*t.price; tq+=Number(o.qty)||0; ta+=amt; if(o.paid)paid++; if(o.picked)picked++;
     h+='<tr><td>'+escHtml(o.customer)+'</td><td class="num">'+o.qty+'</td><td class="num">$'+amt+'</td>'
-      +'<td style="text-align:center"><input type="checkbox" '+(o.paid?"checked":"")+' onchange="updOrder(\''+t.id+'\',\''+o.id+'\',\'paid\',this.checked)" style="width:20px;height:20px"/></td>'
-      +'<td style="text-align:center"><input type="checkbox" '+(o.picked?"checked":"")+' onchange="updOrder(\''+t.id+'\',\''+o.id+'\',\'picked\',this.checked)" style="width:20px;height:20px"/></td>'
-      +'<td><button class="btn-sm" style="background:none;color:#dc2626;font-size:18px;padding:0 6px" onclick="delOrder(\''+t.id+'\',\''+o.id+'\')">×</button></td></tr>'; });
+      +'<td style="text-align:center"><input type="checkbox" '+(o.paid?"checked":"")+' disabled title="付款須由 ERP 團購結帳建立銷貨單" style="width:20px;height:20px"/>'+(o.document_no?'<div class="small">'+escHtml(o.document_no)+'</div>':'')+'</td>'
+      +'<td style="text-align:center"><input type="checkbox" '+(o.picked?"checked":"")+' '+(o.paid?'onchange="updOrder(\''+t.id+'\',\''+o.id+'\',this.checked,this)"':'disabled title="完成付款後才能標記取貨"')+' style="width:20px;height:20px"/></td>'
+      +'<td>'+(!o.paid&&!o.picked&&!o.sale_id?'<button class="btn-sm" id="orderDelete_'+o.id+'" style="background:none;color:#dc2626;font-size:18px;padding:0 6px" onclick="delOrder(\''+t.id+'\',\''+o.id+'\')">×</button>':'')+'</td></tr>'; });
   h+='</tbody><tfoot><tr><td>合計</td><td class="num">'+tq+'</td><td class="num">$'+ta+'</td><td colspan="3"></td></tr></tfoot></table></div>';
   const c=Number(t.cost)||0, costTot=tq*c, profit=ta-costTot;
-  h+='<div class="small" style="margin-top:8px">💰 已付款 '+paid+'/'+orders.length+' 筆　📦 已取貨 '+picked+'/'+orders.length+' 筆<br>📈 營收 <b>$'+ta+'</b>'+(c?'　·　成本 $'+costTot+'　·　毛利 <b style="color:#16a34a">$'+profit+'</b>':'')+'</div>';
+  h+='<div class="small" style="margin-top:8px">💰 已付款 '+paid+'/'+orders.length+' 筆　📦 已取貨 '+picked+'/'+orders.length+' 筆<br>📈 營收 <b>$'+ta+'</b>'+(c?'　·　成本 $'+costTot+'　·　毛利 <b style="color:#16a34a">$'+profit+'</b>':'')+'<br>付款狀態由內部 ERP 團購結帳同步，此頁不直接改動付款或庫存。</div>';
   return h;
 }
 function refreshOrdersUI(){
@@ -599,34 +667,47 @@ function copyLink(id){ const t=teamById(id); if(!t) return; copyToClipboard(shar
 function editTeam(id){ const el=$("editForm_"+id); if(el) el.classList.toggle("hidden"); }
 async function saveEdit(id){
   const t=teamById(id); if(!t)return;
-  const patch={ product:$("eProduct_"+id).value.trim()||t.product, price:Number($("ePrice_"+id).value)||0, cost:Number($("eCost_"+id).value)||0, open_at:$("eOpen_"+id).value||null, close_at:$("eClose_"+id).value||null, note:$("eNote_"+id).value.trim()||null };
-  if(editImageMap[id]!==undefined) patch.image=editImageMap[id];
-  try{ const { error } = await sb.from("gb_teams").update(patch).eq("id",id); if(error) throw error; delete editImageMap[id]; await refreshAll(); }
-  catch(e){ alert("儲存失敗:"+(e.message||e)); }
+  const btn=$("save_"+id); btn.disabled=true; btn.textContent="儲存中…";
+  try{
+    const costEl=$("eCost_"+id);
+    const { error } = await sb.rpc("update_group_buy",{
+      p_team_id:id,p_product:$("eProduct_"+id).value.trim()||t.product,
+      p_price:Number($("ePrice_"+id).value)||0,p_cost:costEl?Number(costEl.value)||0:null,
+      p_image:editImageMap[id]!==undefined?editImageMap[id]:null,p_note:$("eNote_"+id).value.trim()||"",
+      p_open_at:$("eOpen_"+id).value||null,p_close_at:$("eClose_"+id).value||null
+    });
+    if(error) throw error; delete editImageMap[id]; await refreshAll();
+  }catch(e){ alert("儲存失敗:"+(e.message||e)); }
+  btn.disabled=false; btn.textContent="儲存";
 }
 async function toggleClose(id){
   const t=teamById(id); if(!t)return;
   const ns = t.status==="closed"?"open":"closed";
-  try{ const { error } = await sb.from("gb_teams").update({status:ns}).eq("id",id); if(error) throw error; await refreshAll(); }
+  const btn=$("status_"+id); btn.disabled=true; btn.textContent="更新中…";
+  try{ const { error } = await sb.rpc("set_group_buy_status",{p_team_id:id,p_status:ns}); if(error) throw error; await refreshAll(); }
   catch(e){ alert("失敗:"+(e.message||e)); }
+  if(document.body.contains(btn)){ btn.disabled=false; btn.textContent=ns==="closed"?"結單":"重新開單"; }
 }
 async function deleteTeam(id){
   const t=teamById(id); if(!t)return;
-  if(!confirm("確定刪除團「"+t.product+"」?這會一併刪掉它底下所有登記,無法復原。")) return;
-  try{ const { error } = await sb.from("gb_teams").delete().eq("id",id); if(error) throw error; delete ordersMap[id]; await refreshAll(); }
-  catch(e){ alert("刪除失敗:"+(e.message||e)); }
+  if(!confirm("確定刪除團「"+t.product+"」？這會一併刪除未付款的登記，且無法復原。已有付款、取貨或 ERP 銷貨單的團購不能刪除。")) return;
+  const btn=$("delete_"+id); btn.disabled=true; btn.textContent="刪除中…";
+  try{ const { error } = await sb.rpc("delete_group_buy",{p_team_id:id}); if(error) throw error; delete ordersMap[id]; await refreshAll(); }
+  catch(e){ alert("刪除失敗:"+(e.message||e)); if(document.body.contains(btn)){btn.disabled=false;btn.textContent="刪除團";} }
 }
 
-async function updOrder(teamId, id, field, val){
-  try{ const patch={}; patch[field]=val; const { error } = await sb.from("gb_orders").update(patch).eq("id",id); if(error) throw error;
-    const arr=ordersMap[teamId]||[]; const o=arr.find(function(x){return x.id===id;}); if(o){o[field]=val;} refreshOrdersUI(); }
-  catch(e){ alert("更新失敗:"+(e.message||e)); }
+async function updOrder(teamId, id, picked, control){
+  control.disabled=true;
+  try{ const { error } = await sb.rpc("set_group_buy_picked",{p_order_id:id,p_picked:picked}); if(error) throw error;
+    const arr=ordersMap[teamId]||[]; const o=arr.find(function(x){return x.id===id;}); if(o){o.picked=picked;} refreshOrdersUI(); }
+  catch(e){ control.checked=!picked; control.disabled=false; alert("更新失敗:"+(e.message||e)); }
 }
 async function delOrder(teamId, id){
   if(!confirm("刪除這筆登記?")) return;
-  try{ const { error } = await sb.from("gb_orders").delete().eq("id",id); if(error) throw error;
+  const btn=$("orderDelete_"+id); btn.disabled=true;
+  try{ const { error } = await sb.rpc("delete_group_buy_order",{p_order_id:id}); if(error) throw error;
     ordersMap[teamId]=(ordersMap[teamId]||[]).filter(function(x){return x.id!==id;}); refreshOrdersUI(); }
-  catch(e){ alert("刪除失敗:"+(e.message||e)); }
+  catch(e){ btn.disabled=false; alert("刪除失敗:"+(e.message||e)); }
 }
 
 function matrixFor(t, orders){ const wd=weekdayOf(t.open_at); const c=Number(t.cost)||0;
