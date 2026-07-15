@@ -126,11 +126,11 @@
   <div id="regForm" class="card hidden">
     <h2>＋ 我要跟團(加一列)</h2>
     <div class="field"><label>你的名字（讓團購主認得出你）</label><input id="regName" placeholder="例如:王小明 / Cloud" /></div>
-    <div class="field"><label>數量</label><input id="regQty" type="number" value="1" min="1" inputmode="numeric" style="max-width:120px" /></div>
+    <div class="field"><label>數量</label><input id="regQty" type="number" value="1" min="1" max="99" inputmode="numeric" style="max-width:120px" /></div>
     <button class="btn btn-primary" id="regBtn" onclick="submitReg()">加入名單</button>
     <div class="msg" id="regMsg"></div>
   </div>
-  <p class="small" style="text-align:center;opacity:.7">你只能新增自己的一列;別人的登記只能看、不能改。要修改或取消請找團購主。</p>
+  <p class="small" style="text-align:center;opacity:.7">你只能新增自己的登記；公開名單會隱藏部分姓名。要修改或取消請聯絡門市。</p>
 </div>
 
 <!-- 客人登記首頁:列出所有開放中的團 -->
@@ -146,7 +146,7 @@
   <div id="joinLoading" class="card"><p class="small">載入中…</p></div>
   <div id="joinEmpty" class="card hidden"><p style="text-align:center;color:#9aa0b2;padding:22px 0;margin:0">目前沒有開放中的團,晚點再來看看 😊</p></div>
   <div id="joinList"></div>
-  <p class="small" style="text-align:center;opacity:.75;margin-top:4px">你只能新增自己的一列;別人的登記只能看、不能改。要修改或取消請找團購主。</p>
+  <p class="small" style="text-align:center;opacity:.75;margin-top:4px">你只能新增自己的登記；公開名單會隱藏部分姓名。要修改或取消請聯絡門市。</p>
 </div>
 
 <!-- 團購主管理頁 -->
@@ -216,6 +216,15 @@ function today(){ const d=new Date(); return d.getFullYear()+"-"+String(d.getMon
 function weekdayOf(s){ if(!s)return""; const d=new Date(s+"T00:00:00"); return isNaN(d)?"":WEEKDAYS[d.getDay()]; }
 function daysTo(cd){ if(!cd)return null; const d=new Date(cd+"T00:00:00"); if(isNaN(d))return null; const t=new Date(); t.setHours(0,0,0,0); return Math.round((d-t)/86400000); }
 function mdOf(cd){ if(!cd)return""; const p=cd.split("-"); return p.length===3? (p[1]+"/"+p[2]) : cd; }
+function newRequestId(){
+  if(window.crypto && window.crypto.randomUUID) return window.crypto.randomUUID();
+  const bytes=new Uint8Array(16);
+  if(window.crypto && window.crypto.getRandomValues) window.crypto.getRandomValues(bytes);
+  else for(let i=0;i<bytes.length;i++) bytes[i]=Math.floor(Math.random()*256);
+  bytes[6]=(bytes[6]&15)|64; bytes[8]=(bytes[8]&63)|128;
+  const hex=Array.from(bytes,function(b){return b.toString(16).padStart(2,"0");}).join("");
+  return hex.slice(0,8)+"-"+hex.slice(8,12)+"-"+hex.slice(12,16)+"-"+hex.slice(16,20)+"-"+hex.slice(20);
+}
 
 function teamState(t){
   if(t.status==="closed") return "closed";
@@ -241,11 +250,12 @@ let custTeam=null;
 async function initCustomer(id){
   $("custView").classList.remove("hidden");
   try{
-    const { data, error } = await sb.from("gb_teams").select("*").eq("id", id).maybeSingle();
+    const { data, error } = await sb.rpc("get_public_group_buys",{p_team_id:id});
     if(error) throw error;
+    const team=(data||[])[0]||null;
     $("custLoading").classList.add("hidden");
-    if(!data){ $("custCard").classList.remove("hidden"); $("custCard").innerHTML='<div class="banner b-red">找不到這團,可能已被刪除或連結有誤。</div>'; return; }
-    custTeam=data; renderCustomer();
+    if(!team){ $("custCard").classList.remove("hidden"); $("custCard").innerHTML='<div class="banner b-red">找不到這團,可能已被刪除或連結有誤。</div>'; return; }
+    custTeam=team; renderCustomer();
   }catch(e){
     $("custLoading").innerHTML='<div class="banner b-red">載入失敗:'+escHtml(e.message||e)+'</div>';
   }
@@ -280,7 +290,8 @@ let custPoll=null;
 async function loadCustList(){
   if(!custTeam) return;
   try{
-    const { data } = await sb.from("gb_orders").select("customer,qty").eq("team_id",custTeam.id).order("created_at",{ascending:true});
+    const { data, error } = await sb.rpc("get_public_group_buy_orders",{p_team_id:custTeam.id});
+    if(error) throw error;
     renderCustList(data||[]);
   }catch(e){ $("custList").innerHTML='<p class="small">名單載入失敗,按「↻ 更新」再試。</p>'; }
 }
@@ -300,14 +311,11 @@ async function submitReg(){
   const msg=$("regMsg");
   if(!name){ msg.textContent="請填名字"; msg.className="msg msg-warn"; return; }
   const btn=$("regBtn"); btn.disabled=true; btn.textContent="送出中…"; msg.textContent="";
+  const requestId=btn.dataset.requestId||newRequestId(); btn.dataset.requestId=requestId;
   try{
-    // 溫和提醒:同名是否已登記過(只查自己)
-    try{
-      const { count } = await sb.from("gb_orders").select("id",{count:"exact",head:true}).eq("team_id",custTeam.id).eq("customer",name);
-      if(count && count>0){ if(!confirm("你之前好像已經登記過了,要再加一筆嗎?")){ btn.disabled=false; btn.textContent="加入名單"; return; } }
-    }catch(e){}
-    const { error } = await sb.from("gb_orders").insert({ team_id: custTeam.id, customer: name, qty: qty });
+    const { error } = await sb.rpc("join_group_buy",{p_team_id:custTeam.id,p_customer:name,p_qty:qty,p_request_id:requestId});
     if(error) throw error;
+    delete btn.dataset.requestId;
     btn.disabled=false; btn.textContent="加入名單";
     msg.innerHTML="✅ 已把「<b>"+escHtml(name)+"</b> ×"+qty+"」加入名單!"; msg.className="msg msg-ok";
     $("regName").value=""; $("regQty").value="1";
@@ -327,9 +335,9 @@ async function initJoin(){
 }
 async function loadJoinTeams(){
   try{
-    const { data, error } = await sb.from("gb_teams").select("*").order("created_at",{ascending:false});
+    const { data, error } = await sb.rpc("get_public_group_buys",{p_team_id:null});
     if(error) throw error;
-    joinTeams = (data||[]).filter(function(t){ return teamState(t)!=="closed"; });
+    joinTeams = data||[];
     // 開團中排前面,再來是即將開團;各自依結單日近的在前
     joinTeams.sort(function(a,b){
       const sa=teamState(a)==="open"?0:1, sb2=teamState(b)==="open"?0:1;
@@ -366,9 +374,9 @@ function renderJoin(){
       + '<div style="border-top:1px solid #eef0f5;margin-top:12px;padding-top:12px">'
         + '<div class="row2">'
           + '<div class="field" style="margin-bottom:0"><label>你的名字</label><input id="jn_'+t.id+'" placeholder="例如:王小明 / Cloud" /></div>'
-          + '<div class="field" style="margin-bottom:0"><label>數量</label><input id="jq_'+t.id+'" type="number" value="1" min="1" inputmode="numeric" /></div>'
+          + '<div class="field" style="margin-bottom:0"><label>數量</label><input id="jq_'+t.id+'" type="number" value="1" min="1" max="99" inputmode="numeric" /></div>'
         + '</div>'
-        + '<button class="btn btn-primary" style="margin-top:10px" onclick="joinSubmit(\''+t.id+'\')">＋ 我要跟團(加一列)</button>'
+        + '<button class="btn btn-primary" id="jb_'+t.id+'" style="margin-top:10px" onclick="joinSubmit(\''+t.id+'\')">＋ 我要跟團(加一列)</button>'
         + '<div class="msg" id="jm_'+t.id+'"></div>'
       + '</div>'
     + '</div>';
@@ -377,7 +385,8 @@ function renderJoin(){
 }
 async function loadJoinList(id){
   try{
-    const { data } = await sb.from("gb_orders").select("customer,qty").eq("team_id",id).order("created_at",{ascending:true});
+    const { data, error } = await sb.rpc("get_public_group_buy_orders",{p_team_id:id});
+    if(error) throw error;
     const list=data||[]; const cEl=$("jc_"+id), box=$("jl_"+id); if(!box) return;
     if(cEl) cEl.textContent="("+list.length+" 人)";
     if(list.length===0){ box.innerHTML='<p class="small">還沒有人跟團,當第一個吧!</p>'; return; }
@@ -394,24 +403,27 @@ async function joinSubmit(id){
   const qty=Math.max(1, parseInt(qEl.value,10)||1);
   if(!name){ msg.textContent="請先填你的名字喔。"; msg.className="msg msg-warn"; nEl.focus(); return; }
   if(teamState(t)==="closed"){ msg.textContent="這團剛好結單了,無法再登記。"; msg.className="msg msg-warn"; return; }
+  const btn=$("jb_"+id); if(btn){ btn.disabled=true; btn.textContent="送出中…"; }
+  const requestId=(btn&&btn.dataset.requestId)||newRequestId(); if(btn) btn.dataset.requestId=requestId;
   msg.textContent="送出中…"; msg.className="msg";
   try{
-    const { error } = await sb.from("gb_orders").insert({ team_id:id, customer:name, qty:qty });
+    const { error } = await sb.rpc("join_group_buy",{p_team_id:id,p_customer:name,p_qty:qty,p_request_id:requestId});
     if(error) throw error;
+    if(btn) delete btn.dataset.requestId;
     msg.innerHTML="✅ 已把「<b>"+escHtml(name)+"</b> ×"+qty+"」加入名單!"; msg.className="msg msg-ok";
     nEl.value=""; qEl.value="1";
     loadJoinList(id);
   }catch(e){
     msg.textContent="送出失敗:"+(e.message||e)+"(請稍後再試)"; msg.className="msg msg-warn";
   }
+  if(btn){ btn.disabled=false; btn.textContent="＋ 我要跟團(加一列)"; }
 }
 
 /* ===================== 團購主管理頁 ===================== */
 async function initManager(){
   $("mgrView").classList.remove("hidden");
-  $("npOpen").value=today();
-  bindImage();
-  await refreshAll();
+  $("mgrView").innerHTML='<div class="brand"><div class="jp">🔒 團購管理已移至內部 ERP</div><div class="romaji">安全橋接已啟用</div></div>'
+    +'<div class="card"><h2>請從內部 PWA 開啟「團購結帳」</h2><p class="small">為了保護客人姓名、商品成本、付款與庫存資料，公開網站不再提供未登入的管理頁。店主、店長與收銀員登入內部 ERP 後，可依角色進行開團、商品連結、結帳、列印銷貨單與標記取貨。</p><p class="small"><a href="'+location.pathname+'">返回客人團購登記頁</a></p></div>';
 }
 async function refreshAll(){
   await loadTeams();
