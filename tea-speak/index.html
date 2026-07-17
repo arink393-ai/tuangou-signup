@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>高級大人の翻譯器</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#141b16;
+    --panel:#101711;
+    --gold:#c9a45c;
+    --gold-dim:#8a7444;
+    --cream:#f5efdd;
+    --ink:#2a2418;
+    --text:#e8e2d0;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    font-family:'Noto Serif TC','PingFang TC','Microsoft JhengHei',serif;
+    color:var(--text);
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:24px 16px 48px;
+  }
+  .card{
+    width:100%;
+    max-width:520px;
+    background:var(--panel);
+    border:1px solid var(--gold-dim);
+    border-radius:14px;
+    padding:28px 24px 20px;
+    box-shadow:0 0 0 6px var(--bg), 0 12px 40px rgba(0,0,0,.5);
+  }
+  h1{
+    text-align:center;
+    color:var(--gold);
+    font-size:20px;
+    font-weight:600;
+    letter-spacing:.45em;
+    text-indent:.45em;
+    margin-bottom:6px;
+  }
+  .subtitle{
+    text-align:center;
+    color:var(--gold-dim);
+    font-size:12px;
+    letter-spacing:.2em;
+    margin-bottom:26px;
+  }
+  .label{
+    color:#9aa08e;
+    font-size:13px;
+    letter-spacing:.35em;
+    margin-bottom:10px;
+  }
+  textarea{
+    width:100%;
+    background:var(--cream);
+    color:var(--ink);
+    border:none;
+    border-radius:8px;
+    padding:14px 16px;
+    font-family:inherit;
+    font-size:17px;
+    font-weight:600;
+    line-height:1.6;
+    resize:none;
+    min-height:58px;
+  }
+  textarea:focus{outline:2px solid var(--gold);}
+  .chips{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    margin:12px 0 22px;
+  }
+  .chip{
+    background:transparent;
+    border:1px solid var(--gold-dim);
+    color:var(--gold);
+    border-radius:999px;
+    padding:5px 12px;
+    font-size:13px;
+    font-family:inherit;
+    cursor:pointer;
+    transition:background .15s;
+  }
+  .chip:hover{background:rgba(201,164,92,.12);}
+  .translate-btn{
+    width:100%;
+    background:var(--gold);
+    color:#1a140a;
+    border:none;
+    border-radius:8px;
+    padding:13px;
+    font-family:inherit;
+    font-size:16px;
+    font-weight:700;
+    letter-spacing:.3em;
+    text-indent:.3em;
+    cursor:pointer;
+    margin-bottom:24px;
+    transition:filter .15s;
+  }
+  .translate-btn:hover{filter:brightness(1.1);}
+  .translate-btn:disabled{opacity:.5;cursor:wait;}
+  .output{
+    color:var(--gold);
+    font-size:19px;
+    font-weight:600;
+    line-height:2;
+    min-height:76px;
+    letter-spacing:.05em;
+  }
+  .output.placeholder{color:#4a5245;font-size:15px;font-weight:400;}
+  .actions{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+    margin-top:14px;
+    min-height:30px;
+  }
+  .tags{
+    color:var(--gold-dim);
+    font-size:12px;
+    letter-spacing:.2em;
+  }
+  .ghost-btn{
+    background:transparent;
+    border:1px solid var(--gold-dim);
+    color:var(--gold);
+    border-radius:6px;
+    padding:5px 14px;
+    font-family:inherit;
+    font-size:13px;
+    cursor:pointer;
+  }
+  .ghost-btn:hover{background:rgba(201,164,92,.12);}
+  .divider{
+    border:none;
+    border-top:1px solid var(--gold-dim);
+    margin:22px 0 14px;
+    opacity:.6;
+  }
+  .footer{
+    display:flex;
+    justify-content:space-between;
+    color:var(--gold-dim);
+    font-size:13px;
+    letter-spacing:.08em;
+  }
+  .settings{
+    width:100%;
+    max-width:520px;
+    margin-top:18px;
+  }
+  details{
+    color:#9aa08e;
+    font-size:13px;
+  }
+  summary{cursor:pointer;letter-spacing:.15em;padding:6px 4px;}
+  .settings-body{
+    border:1px solid #2c352c;
+    border-radius:10px;
+    padding:14px;
+    margin-top:8px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  .settings-body input{
+    width:100%;
+    background:#0d130e;
+    border:1px solid #2c352c;
+    border-radius:6px;
+    color:var(--text);
+    padding:9px 12px;
+    font-size:13px;
+    font-family:inherit;
+  }
+  .settings-body input:focus{outline:1px solid var(--gold-dim);}
+  .hint{font-size:12px;line-height:1.7;color:#6c7565;}
+  .save-row{display:flex;gap:8px;align-items:center;}
+  .status{font-size:12px;color:var(--gold);}
+  @media (max-width:420px){
+    h1{font-size:17px;letter-spacing:.3em;}
+    .output{font-size:17px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <h1>高級大人の翻譯器</h1>
+  <div class="subtitle">把真心話，翻譯成有教養的場面話</div>
+
+  <div class="label">初 級 大 人</div>
+  <textarea id="input" rows="2" placeholder="輸入你心裡真正想說的話⋯⋯"></textarea>
+
+  <div class="chips" id="chips"></div>
+
+  <button class="translate-btn" id="translateBtn">翻 譯</button>
+
+  <div class="label">高 級 大 人</div>
+  <div class="output placeholder" id="output">翻譯結果會出現在這裡。</div>
+
+  <div class="actions">
+    <span class="tags" id="tags"></span>
+    <button class="ghost-btn" id="copyBtn" style="display:none">複製</button>
+  </div>
+
+  <hr class="divider">
+  <div class="footer">
+    <span>tea-speak <span id="dictCount" style="opacity:.7"></span></span>
+    <span>@o.w.o</span>
+  </div>
+</div>
+
+<div class="settings">
+  <details>
+    <summary>⚙︎ AI 翻譯設定（選填）</summary>
+    <div class="settings-body">
+      <div class="hint">內建辭典收錄了常見語句，不用設定也能玩。填入 Gemini API Key 之後，辭典沒收錄的句子會交給 AI 即時翻譯。Key 只儲存在你自己的瀏覽器中。</div>
+      <input type="password" id="apiKey" placeholder="Gemini API Key（AIza 開頭）">
+      <div class="save-row">
+        <button class="ghost-btn" id="saveKeyBtn">儲存</button>
+        <button class="ghost-btn" id="clearKeyBtn">清除</button>
+        <span class="status" id="keyStatus"></span>
+      </div>
+    </div>
+  </details>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ── 內建辭典 ───────────────────────────── */
+  var DICT = [];
+  var dictStatus = "loading";
+
+  /* ── 載入外部辭典 dict.json（與本檔放在同一資料夾） ── */
+  fetch("dict.json")
+    .then(function(res){
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      return res.json();
+    })
+    .then(function(data){
+      DICT = data;
+      dictStatus = "ready";
+      var el = document.getElementById("dictCount");
+      if (el) el.textContent = "收錄 " + DICT.length + " 組";
+    })
+    .catch(function(err){
+      dictStatus = "failed";
+      console.error("辭典載入失敗:", err);
+      var el = document.getElementById("dictCount");
+      if (el) el.textContent = "辭典載入失敗";
+    });
+
+  var CHIP_SAMPLES = ["對對對你說的都對","干我屁事","你行你來","講重點好嗎","隨便啦","你很煩欸"];
+
+  var input = document.getElementById("input");
+  var output = document.getElementById("output");
+  var translateBtn = document.getElementById("translateBtn");
+  var copyBtn = document.getElementById("copyBtn");
+  var tagsEl = document.getElementById("tags");
+  var chipsEl = document.getElementById("chips");
+  var apiKeyInput = document.getElementById("apiKey");
+  var keyStatus = document.getElementById("keyStatus");
+
+  /* ── API Key 儲存（在瀏覽器環境不支援時自動改用記憶體） ── */
+  var memKey = "";
+  function getKey(){
+    try { return localStorage.getItem("teaSpeakGeminiKey") || memKey; }
+    catch(e){ return memKey; }
+  }
+  function setKey(v){
+    memKey = v;
+    try { localStorage.setItem("teaSpeakGeminiKey", v); } catch(e){}
+  }
+  function clearKey(){
+    memKey = "";
+    try { localStorage.removeItem("teaSpeakGeminiKey"); } catch(e){}
+  }
+
+  /* ── 範例 chips ── */
+  CHIP_SAMPLES.forEach(function(t){
+    var b = document.createElement("button");
+    b.className = "chip";
+    b.textContent = t;
+    b.addEventListener("click", function(){
+      input.value = t;
+      doTranslate();
+    });
+    chipsEl.appendChild(b);
+  });
+
+  /* ── 辭典查詢：只要輸入包含關鍵字就命中，多筆命中時取最長關鍵字 ── */
+  function lookup(text){
+    var t = text.replace(/[\s，。！？!?,.~〜]/g,"");
+    if (!t) return null;
+    var best = null, bestLen = 0;
+    for (var i = 0; i < DICT.length; i++){
+      var entry = DICT[i];
+      for (var j = 0; j < entry.k.length; j++){
+        var key = entry.k[j].replace(/\s+/g,"");
+        if (t === key) return entry;
+        var hit = (t.indexOf(key) !== -1) ||
+                  (t.length >= 3 && key.indexOf(t) !== -1);
+        if (hit && key.length > bestLen){
+          best = entry;
+          bestLen = key.length;
+        }
+      }
+    }
+    return best;
+  }
+
+  /* ── Gemini AI 翻譯 ── */
+  function aiTranslate(text, key){
+    var prompt =
+      "你是「高級大人の翻譯器」。使用者會輸入一句心裡真正想說、但比較直白粗俗或情緒化的話，" +
+      "請把它翻譯成職場上專業、有教養、不失品格、綿裡藏針的「高級大人」說法。" +
+      "要求：使用臺灣繁體中文與臺灣職場慣用語氣；保留原句的真實意圖但包裝得體面；" +
+      "一到兩句話即可；只輸出翻譯結果，不要任何解釋或前言。\n\n" +
+      "初級大人：" + text + "\n高級大人：";
+    return fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" + encodeURIComponent(key), {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({
+        contents:[{ parts:[{ text: prompt }] }],
+        generationConfig:{ temperature:0.8, maxOutputTokens:200 }
+      })
+    })
+    .then(function(res){
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      return res.json();
+    })
+    .then(function(data){
+      var parts = data && data.candidates && data.candidates[0] &&
+                  data.candidates[0].content && data.candidates[0].content.parts;
+      var textOut = parts && parts[0] && parts[0].text ? parts[0].text.trim() : "";
+      if (!textOut) throw new Error("空回應");
+      return textOut.replace(/^高級大人[:：]\s*/,"");
+    });
+  }
+
+  /* ── 顯示結果 ── */
+  function showResult(text, scene, tone, fine){
+    output.classList.remove("placeholder");
+    output.textContent = "";
+    copyBtn.style.display = "none";
+    tagsEl.textContent = "";
+    var i = 0;
+    var timer = setInterval(function(){
+      output.textContent = text.slice(0, ++i);
+      if (i >= text.length){
+        clearInterval(timer);
+        copyBtn.style.display = "inline-block";
+        var tags = [];
+        if (scene) tags.push(scene);
+        if (tone) tags.push(tone);
+        if (typeof fine === "number"){
+          tags.push(fine > 0
+            ? "已為你省下判賠行情 NT$" + fine.toLocaleString()
+            : "判賠 NT$0（發語詞不罰）");
+        }
+        tagsEl.textContent = tags.length ? tags.join(" ・ ") : "";
+      }
+    }, 28);
+  }
+
+  function showMessage(msg){
+    output.classList.add("placeholder");
+    output.textContent = msg;
+    copyBtn.style.display = "none";
+    tagsEl.textContent = "";
+  }
+
+  /* ── 主流程 ── */
+  function doTranslate(){
+    var text = input.value.trim();
+    if (!text){ showMessage("先輸入一句真心話吧。"); return; }
+
+    if (dictStatus === "loading"){
+      showMessage("辭典載入中，請稍候一秒再試⋯⋯");
+      return;
+    }
+
+    var hit = lookup(text);
+    if (hit){ showResult(hit.v, hit.s, hit.t, hit.f); return; }
+
+    var key = getKey();
+    if (!key){
+      showMessage(dictStatus === "failed"
+        ? "辭典載入失敗（請確認 dict.json 與本頁放在同一資料夾）。或在下方設定 Gemini API Key 使用 AI 翻譯。"
+        : "辭典還沒收錄這句話。想翻譯任意句子，請在下方設定 Gemini API Key。");
+      return;
+    }
+
+    translateBtn.disabled = true;
+    showMessage("高級大人思考中⋯⋯");
+    aiTranslate(text, key)
+      .then(function(result){ showResult(result, "AI 翻譯", null); })
+      .catch(function(err){
+        showMessage("AI 翻譯失敗（" + err.message + "），請確認 API Key 是否正確或稍後再試。");
+      })
+      .then(function(){ translateBtn.disabled = false; });
+  }
+
+  translateBtn.addEventListener("click", doTranslate);
+  input.addEventListener("keydown", function(e){
+    if (e.key === "Enter" && !e.shiftKey){
+      e.preventDefault();
+      doTranslate();
+    }
+  });
+
+  copyBtn.addEventListener("click", function(){
+    var text = output.textContent;
+    function done(){ copyBtn.textContent = "已複製 ✓"; setTimeout(function(){ copyBtn.textContent = "複製"; }, 1500); }
+    if (navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(done).catch(function(){ fallbackCopy(text); done(); });
+    } else {
+      fallbackCopy(text); done();
+    }
+  });
+  function fallbackCopy(text){
+    var ta = document.createElement("textarea");
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand("copy"); } catch(e){}
+    document.body.removeChild(ta);
+  }
+
+  /* ── 設定區 ── */
+  document.getElementById("saveKeyBtn").addEventListener("click", function(){
+    var v = apiKeyInput.value.trim();
+    if (!v){ keyStatus.textContent = "請先貼上 Key"; return; }
+    setKey(v);
+    keyStatus.textContent = "已儲存 ✓";
+  });
+  document.getElementById("clearKeyBtn").addEventListener("click", function(){
+    clearKey();
+    apiKeyInput.value = "";
+    keyStatus.textContent = "已清除";
+  });
+  var existing = getKey();
+  if (existing){
+    apiKeyInput.value = existing;
+    keyStatus.textContent = "已載入儲存的 Key";
+  }
+})();
+</script>
+</body>
+</html>
