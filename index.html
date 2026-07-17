@@ -607,6 +607,7 @@ function renderTeamCard(t){
   h += '<div style="border-top:1px solid #eef0f5;margin-top:12px;padding-top:12px">';
   h += '<div class="inline" style="justify-content:space-between"><h2 style="margin:0;font-size:16px">📝 登記名單 <span class="small" id="mCount_'+t.id+'">('+orders.length+' 筆)</span></h2></div>';
   h += '<div id="ordersBox_'+t.id+'" style="margin-top:10px">'+renderOrdersTable(t, orders)+'</div>';
+  h += '<div style="margin-top:10px"><button class="btn-primary btn" style="width:100%" onclick="downloadForERP(\''+t.id+'\')">⬇ 匯出給進銷存（含訂單編號）</button></div>';
   h += '<div class="two" style="margin-top:10px"><button class="btn-primary btn" onclick="copyExcel(\''+t.id+'\')">📋 複製到 Excel</button><button class="btn-line btn" onclick="downloadCSV(\''+t.id+'\')">⬇ 下載 CSV</button></div>';
   h += '<div class="msg" id="expMsg_'+t.id+'"></div>';
   h += '</div>';
@@ -709,6 +710,21 @@ async function delOrder(teamId, id){
   catch(e){ btn.disabled=false; alert("刪除失敗:"+(e.message||e)); }
 }
 
+function downloadForERP(id){
+  const t=teamById(id); if(!t) return;
+  const orders=(ordersMap[id]||[]).filter(function(o){ return !o.paid; }); // 已結帳過的不再匯出，避免重複結帳
+  if(!orders.length){ flashMsg(id, (ordersMap[id]||[]).length?"這個團的登記都已完成結帳了。":"這個團還沒有人登記。", false); return; }
+  try{
+    const head=["訂單編號","品項","數量","售價","訂購者"];
+    const rows=orders.map(function(o){ return [o.id, t.product, Number(o.qty)||0, t.price, o.customer]; });
+    const esc=function(c){ const s=String(c==null?"":c); return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; };
+    const csv="﻿"+[head].concat(rows).map(function(r){return r.map(esc).join(",");}).join("\r\n");
+    const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"}); const url=URL.createObjectURL(blob);
+    const a=document.createElement("a"); a.href=url; a.download=(t.product||"團購")+"_進銷存_"+today()+".csv";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+    flashMsg(id,"已匯出 "+orders.length+" 筆（未結帳者）。到進銷存 → 銷貨 → 團購匯入拉進去。",true);
+  }catch(e){ flashMsg(id,"此環境擋住下載,請改用「複製到 Excel」。",false); }
+}
 function matrixFor(t, orders){ const wd=weekdayOf(t.open_at); const c=Number(t.cost)||0;
   return orders.map(function(o){ const qty=Number(o.qty)||0, amt=qty*t.price; return [t.open_at||"","","",t.product,"",o.customer,"",t.price,qty,amt,qty*c,qty*(t.price-c),wd]; }); }
 function tsvTextFor(t, orders){ return [HEADERS].concat(matrixFor(t,orders)).map(function(r){return r.join("\t");}).join("\n"); }
